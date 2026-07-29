@@ -1,0 +1,37 @@
+name: Validate skill
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run deterministic smoke tests
+        run: node .github/scripts/run_smoke_tests.mjs
+
+      - name: Validate the exact runtime package contents
+        shell: bash
+        run: |
+          set -euo pipefail
+          skill_name="build-boutique-store-plan"
+          staging_dir="$(mktemp -d)"
+          trap 'rm -rf "${staging_dir}"' EXIT
+          mkdir -p "${staging_dir}/${skill_name}"
+          cp SKILL.md "${staging_dir}/${skill_name}/"
+          cp -R agents scripts references assets "${staging_dir}/${skill_name}/"
+          node .github/scripts/validate_public_package.mjs "${staging_dir}/${skill_name}"

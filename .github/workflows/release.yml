@@ -1,0 +1,65 @@
+name: Package skill release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the tagged source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run deterministic smoke tests
+        run: node .github/scripts/run_smoke_tests.mjs
+
+      - name: Package the runtime skill
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          skill_name="build-boutique-store-plan"
+          [[ "${GITHUB_REF_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          archive="${skill_name}-${GITHUB_REF_NAME}.zip"
+          staging_dir="$(mktemp -d)"
+          trap 'rm -rf "${staging_dir}"' EXIT
+
+          test -f SKILL.md
+          for runtime_dir in agents scripts references assets; do
+            test -d "${runtime_dir}"
+          done
+
+          mkdir -p "${staging_dir}/${skill_name}"
+          cp SKILL.md "${staging_dir}/${skill_name}/"
+          cp -R agents scripts references assets "${staging_dir}/${skill_name}/"
+
+          node .github/scripts/validate_public_package.mjs "${staging_dir}/${skill_name}"
+
+          (
+            cd "${staging_dir}"
+            zip -qr "${GITHUB_WORKSPACE}/${archive}" "${skill_name}"
+          )
+
+          unzip -l "${archive}"
+          echo "RELEASE_ARCHIVE=${archive}" >> "${GITHUB_ENV}"
+
+      - name: Create the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release create "${GITHUB_REF_NAME}" \
+            "${RELEASE_ARCHIVE}" \
+            --title "精品大店规划 Skill ${GITHUB_REF_NAME}" \
+            --notes "下载并解压完整 Skill 工具包。公开代码不代表获得内部 BI/GCRM 权限；附件不含客户数据、Cookie 或 Token。Release 附件的 download_count 用于统计累计下载次数；GitHub 自动生成的 Source code 压缩包不计入该口径。"

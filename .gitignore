@@ -1,0 +1,26 @@
+.DS_Store
+.env
+.env.*
+node_modules/
+
+# Local customer extracts and generated analysis artifacts
+customer-data/
+inputs/
+outputs/
+tmp/
+package/
+*.xls
+*.xlsx
+*.csv
+*.tsv
+*.parquet
+*.ndjson
+*.inspect.json
+*.previews/
+portfolio.json
+portfolio-audit.json
+portfolio-*.json
+*-portfolio-audit.json
+
+# Locally built release packages
+build-boutique-store-plan-v*.zip
