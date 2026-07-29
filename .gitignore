@@ -25,6 +25,8 @@ portfolio-*.json
 # Synthetic fixtures are safe and required by CI
 !tests/fixtures/id.tsv
 !tests/fixtures/names.tsv
+!tests/fixtures/tolerant-id.tsv
+!tests/fixtures/tolerant-names.tsv
 
 # Locally built release packages
 build-boutique-store-plan-v*.zip
