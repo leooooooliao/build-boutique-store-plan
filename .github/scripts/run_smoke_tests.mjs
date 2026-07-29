@@ -22,10 +22,14 @@ function validateReadme() {
     "hits.sh/github.com/leooooooliao/build-boutique-store-plan.svg",
     "github/issues-search",
     "给任意 AI 的安装提示词",
-    "第一次使用提示词",
+    "第一次使用",
     "不得假装安装成功",
-    "从“跑品带量”升级为“精品店沉淀”",
-    "达人难以判断这家店适合什么人",
+    "Amy 与 Mira 的浏览器授权",
+    "不要选择云端浏览器授权",
+    "完整报告必须实际查询营销参谋",
+    "同一个 Excel 的两个 Sheet",
+    "直接在对话中分两段粘贴",
+    "达人找不到清晰的合作主题",
   ];
   const missing = requiredFragments.filter((fragment) => !readme.includes(fragment));
   if (missing.length > 0) {
@@ -48,26 +52,6 @@ function runNode(arguments_, expectedStatus = 0) {
   }
 }
 
-function reportArguments(file, mode, expectedProducts, expectedTop = 3) {
-  return [
-    "scripts/validate_report.mjs",
-    "--report",
-    path.join(fixtures, file),
-    "--merchant-window",
-    "2026-07-01..2026-07-26",
-    "--gcrm-window",
-    "2026-06-29..2026-07-28",
-    "--generated-date",
-    "2026-07-29",
-    "--gcrm-mode",
-    mode,
-    "--expected-gcrm-products",
-    String(expectedProducts),
-    "--expected-top",
-    String(expectedTop),
-  ];
-}
-
 try {
   validateReadme();
 
@@ -75,12 +59,19 @@ try {
     "scripts/lib.mjs",
     "scripts/validate_input.mjs",
     "scripts/prepare_portfolio.mjs",
+    "scripts/validate_plan_evidence.mjs",
     "scripts/validate_report.mjs",
+    "dependencies/gcrm-core/validate-evidence.mjs",
+    "tests/data_regression.mjs",
+    "tests/validate_report.test.mjs",
     ".github/scripts/validate_public_package.mjs",
     ".github/scripts/release_asset_downloads.mjs",
   ]) {
     runNode(["--check", relativePath]);
   }
+
+  runNode(["tests/data_regression.mjs"]);
+  runNode(["tests/validate_report.test.mjs"]);
 
   const commonInput = [
     "--id-data",
@@ -91,10 +82,6 @@ try {
     "Synthetic QA Merchant",
     "--currency",
     "各国本币分国展示",
-    "--confirm-same-merchant",
-    "yes",
-    "--confirm-same-period",
-    "yes",
     "--merchant-window",
     "2026-07-01..2026-07-26",
     "--gcrm-window",
@@ -107,13 +94,9 @@ try {
     ...commonInput,
     "--output",
     path.join(temporaryDirectory, "portfolio-audit.json"),
+    "--analysis-output",
+    path.join(temporaryDirectory, "analysis-pool.json"),
   ]);
-
-  runNode(reportArguments("report-good.md", "verified", 3));
-  runNode(reportArguments("report-no-candidate.md", "no-candidate", 0));
-  runNode(reportArguments("report-unavailable.md", "unavailable", 0));
-  runNode(reportArguments("report-empty-shop.md", "verified", 3), 1);
-  runNode(reportArguments("report-bad.md", "verified", 1, 1), 1);
 
   process.stdout.write("Smoke tests passed.\n");
 } finally {

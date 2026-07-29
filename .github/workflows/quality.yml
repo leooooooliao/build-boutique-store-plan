@@ -33,5 +33,5 @@ jobs:
           trap 'rm -rf "${staging_dir}"' EXIT
           mkdir -p "${staging_dir}/${skill_name}"
           cp README.md SKILL.md "${staging_dir}/${skill_name}/"
-          cp -R agents scripts references assets "${staging_dir}/${skill_name}/"
+          cp -R agents scripts references assets dependencies "${staging_dir}/${skill_name}/"
           node .github/scripts/validate_public_package.mjs "${staging_dir}/${skill_name}"

@@ -1,0 +1,199 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/leooooooliao/build-boutique-store-plan/dependencies/gcrm-core/evidence.schema.json",
+  "title": "Boutique Store GCRM Evidence",
+  "type": "object",
+  "required": ["schema_version", "source", "browser", "queries", "candidates"],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "source": {
+      "type": "object",
+      "required": ["system", "page_url", "taxonomy_snapshot"],
+      "properties": {
+        "system": { "const": "GCRM Marketing Advisor" },
+        "page_url": { "type": "string", "format": "uri" },
+        "taxonomy_snapshot": { "type": "string", "format": "date" }
+      },
+      "additionalProperties": true
+    },
+    "browser": {
+      "type": "object",
+      "required": ["state", "adapter", "local_authenticated_session"],
+      "properties": {
+        "state": {
+          "enum": [
+            "not_checked",
+            "permission_needed",
+            "browser_ready",
+            "page_ready",
+            "filters_verified",
+            "evidence_collected",
+            "evidence_validated",
+            "auth_required",
+            "capability_blocked",
+            "filter_failed",
+            "user_skipped",
+            "unavailable"
+          ]
+        },
+        "adapter": { "type": "string", "minLength": 1 },
+        "local_authenticated_session": { "type": "boolean" },
+        "attempted_paths": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "queries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "query_id",
+          "theme_rank",
+          "theme_name",
+          "country",
+          "category",
+          "window",
+          "filter_url",
+          "captured_at",
+          "result_status",
+          "row_count",
+          "proof"
+        ],
+        "properties": {
+          "query_id": { "type": "string", "minLength": 1 },
+          "theme_rank": { "type": "integer", "minimum": 1, "maximum": 10 },
+          "theme_name": { "type": "string", "minLength": 1 },
+          "country": { "type": "string", "minLength": 2 },
+          "category": {
+            "type": "object",
+            "required": ["l1", "l2_status"],
+            "properties": {
+              "l1": { "type": "string", "minLength": 1 },
+              "l2": { "type": ["string", "null"] },
+              "l2_status": {
+                "enum": ["selected", "not_available", "not_supported"]
+              }
+            },
+            "additionalProperties": false
+          },
+          "window": {
+            "type": "object",
+            "required": ["start", "end"],
+            "properties": {
+              "start": { "type": "string", "format": "date" },
+              "end": { "type": "string", "format": "date" }
+            },
+            "additionalProperties": false
+          },
+          "filter_url": { "type": "string", "format": "uri" },
+          "captured_at": { "type": "string", "format": "date-time" },
+          "result_status": {
+            "enum": ["success", "auth_required", "capability_blocked", "filter_failed", "unavailable"]
+          },
+          "row_count": { "type": "integer", "minimum": 0 },
+          "proof": {
+            "type": "object",
+            "required": ["capture_method"],
+            "properties": {
+              "capture_method": {
+                "enum": ["xhr", "dom", "export", "visible_table"]
+              },
+              "screenshot_ref": { "type": "string", "minLength": 1 },
+              "dom_snapshot_ref": { "type": "string", "minLength": 1 },
+              "export_ref": { "type": "string", "minLength": 1 }
+            },
+            "anyOf": [
+              { "required": ["screenshot_ref"] },
+              { "required": ["dom_snapshot_ref"] },
+              { "required": ["export_ref"] }
+            ],
+            "additionalProperties": true
+          },
+          "no_candidate_reason": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": true
+      }
+    },
+    "candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "query_id",
+          "theme_rank",
+          "theme_name",
+          "product_id",
+          "original_title",
+          "chinese_name",
+          "original_shop_name",
+          "country",
+          "category",
+          "window",
+          "gmv_range",
+          "growth_range",
+          "channel_ranges",
+          "filter_url",
+          "captured_at"
+        ],
+        "properties": {
+          "query_id": { "type": "string", "minLength": 1 },
+          "theme_rank": { "type": "integer", "minimum": 1, "maximum": 10 },
+          "theme_name": { "type": "string", "minLength": 1 },
+          "product_id": { "type": "string", "pattern": "^1[0-9]{18}$" },
+          "original_title": { "type": "string", "minLength": 1 },
+          "chinese_name": { "type": "string", "minLength": 1 },
+          "original_shop_name": { "type": "string", "minLength": 1 },
+          "country": { "type": "string", "minLength": 2 },
+          "category": { "$ref": "#/$defs/category" },
+          "window": { "$ref": "#/$defs/window" },
+          "gmv_range": { "type": "string", "minLength": 1 },
+          "growth_range": { "type": "string", "minLength": 1 },
+          "channel_ranges": {
+            "type": "object",
+            "minProperties": 1,
+            "additionalProperties": { "type": "string", "minLength": 1 }
+          },
+          "image_url": { "type": "string", "format": "uri" },
+          "screenshot_ref": { "type": "string", "minLength": 1 },
+          "filter_url": { "type": "string", "format": "uri" },
+          "captured_at": { "type": "string", "format": "date-time" }
+        },
+        "anyOf": [
+          { "required": ["image_url"] },
+          { "required": ["screenshot_ref"] }
+        ],
+        "additionalProperties": true
+      }
+    }
+  },
+  "$defs": {
+    "category": {
+      "type": "object",
+      "required": ["l1", "l2_status"],
+      "properties": {
+        "l1": { "type": "string", "minLength": 1 },
+        "l2": { "type": ["string", "null"] },
+        "l2_status": {
+          "enum": ["selected", "not_available", "not_supported"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "window": {
+      "type": "object",
+      "required": ["start", "end"],
+      "properties": {
+        "start": { "type": "string", "format": "date" },
+        "end": { "type": "string", "format": "date" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,89 @@
+{
+  "schema_version": "1.0.0",
+  "source": {
+    "system": "GCRM Marketing Advisor",
+    "page_url": "https://mmm.tiktok-row.net/gcrm_overseas/phoenix/marketing-advisor/product-insights/top-product",
+    "taxonomy_snapshot": "2026-07-28"
+  },
+  "browser": {
+    "state": "evidence_collected",
+    "adapter": "Aime Chrome",
+    "local_authenticated_session": true,
+    "attempted_paths": ["dom"]
+  },
+  "queries": [
+    {
+      "query_id": "my-kitchen-none-202607",
+      "theme_rank": 1,
+      "theme_name": "厨房",
+      "country": "MY",
+      "category": {
+        "l1": "厨房用品",
+        "l2": null,
+        "l2_status": "not_available"
+      },
+      "window": {
+        "start": "2026-06-29",
+        "end": "2026-07-28"
+      },
+      "filter_url": "https://mmm.tiktok-row.net/gcrm_overseas/phoenix/marketing-advisor/product-insights/top-product?country=MY&category=kitchen",
+      "captured_at": "2026-07-29T16:00:00+08:00",
+      "result_status": "success",
+      "row_count": 50,
+      "proof": {
+        "capture_method": "dom",
+        "screenshot_ref": "gcrm-my-kitchen-none-202607.png"
+      },
+      "no_candidate_reason": "读取到的商品均与客户现有货盘功能重复"
+    },
+    {
+      "query_id": "my-auto-none-202607",
+      "theme_rank": 2,
+      "theme_name": "车品",
+      "country": "MY",
+      "category": {
+        "l1": "汽车与摩托车",
+        "l2": null,
+        "l2_status": "not_supported"
+      },
+      "window": {
+        "start": "2026-06-29",
+        "end": "2026-07-28"
+      },
+      "filter_url": "https://mmm.tiktok-row.net/gcrm_overseas/phoenix/marketing-advisor/product-insights/top-product?country=MY&category=auto",
+      "captured_at": "2026-07-29T16:06:00+08:00",
+      "result_status": "success",
+      "row_count": 50,
+      "proof": {
+        "capture_method": "dom",
+        "screenshot_ref": "gcrm-my-auto-none-202607.png"
+      },
+      "no_candidate_reason": "读取到的商品均缺少与现有主题互补的场景"
+    },
+    {
+      "query_id": "my-care-none-202607",
+      "theme_rank": 3,
+      "theme_name": "按摩",
+      "country": "MY",
+      "category": {
+        "l1": "保健",
+        "l2": null,
+        "l2_status": "not_available"
+      },
+      "window": {
+        "start": "2026-06-29",
+        "end": "2026-07-28"
+      },
+      "filter_url": "https://mmm.tiktok-row.net/gcrm_overseas/phoenix/marketing-advisor/product-insights/top-product?country=MY&category=care",
+      "captured_at": "2026-07-29T16:12:00+08:00",
+      "result_status": "success",
+      "row_count": 50,
+      "proof": {
+        "capture_method": "dom",
+        "screenshot_ref": "gcrm-my-care-none-202607.png"
+      },
+      "no_candidate_reason": "读取到的商品均与现有按摩类商品原型重复"
+    }
+  ],
+  "candidates": []
+}

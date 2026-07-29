@@ -36,13 +36,13 @@ jobs:
 
           test -f README.md
           test -f SKILL.md
-          for runtime_dir in agents scripts references assets; do
+          for runtime_dir in agents scripts references assets dependencies; do
             test -d "${runtime_dir}"
           done
 
           mkdir -p "${staging_dir}/${skill_name}"
           cp README.md SKILL.md "${staging_dir}/${skill_name}/"
-          cp -R agents scripts references assets "${staging_dir}/${skill_name}/"
+          cp -R agents scripts references assets dependencies "${staging_dir}/${skill_name}/"
 
           node .github/scripts/validate_public_package.mjs "${staging_dir}/${skill_name}"
 
