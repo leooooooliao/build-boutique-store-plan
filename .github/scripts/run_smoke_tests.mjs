@@ -15,6 +15,22 @@ const temporaryDirectory = fs.mkdtempSync(
   path.join(os.tmpdir(), "boutique-store-skill-"),
 );
 
+function validateReadme() {
+  const readme = fs.readFileSync(path.join(repositoryRoot, "README.md"), "utf8");
+  const requiredFragments = [
+    "img.shields.io/github/downloads/leooooooliao/build-boutique-store-plan/total",
+    "hits.sh/github.com/leooooooliao/build-boutique-store-plan.svg",
+    "github/issues-search",
+    "给任意 AI 的安装提示词",
+    "第一次使用提示词",
+    "不得假装安装成功",
+  ];
+  const missing = requiredFragments.filter((fragment) => !readme.includes(fragment));
+  if (missing.length > 0) {
+    throw new Error(`README is missing required fragments: ${missing.join(", ")}`);
+  }
+}
+
 function runNode(arguments_, expectedStatus = 0) {
   const result = spawnSync(process.execPath, arguments_, {
     cwd: repositoryRoot,
@@ -51,6 +67,8 @@ function reportArguments(file, mode, expectedProducts, expectedTop = 3) {
 }
 
 try {
+  validateReadme();
+
   for (const relativePath of [
     "scripts/lib.mjs",
     "scripts/validate_input.mjs",

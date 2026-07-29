@@ -1,0 +1,36 @@
+name: 安装成功登记
+description: 自愿登记一次成功安装，用于统计已登记安装数
+title: "[Install] "
+labels:
+  - installed
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢使用。该登记完全自愿，请勿填写商家名称、客户数据、内部链接或其他敏感信息。
+  - type: dropdown
+    id: ai_host
+    attributes:
+      label: 使用环境
+      description: 请选择安装或加载该 Skill 的 AI 环境。
+      options:
+        - Codex / ChatGPT
+        - Claude / Claude Code
+        - Gemini / Gemini CLI
+        - Cursor / 其他 AI IDE
+        - 其他
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Skill 版本
+      description: 可填写 Release 版本，例如 v1.0.1。
+      placeholder: v1.0.1
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: 确认
+      options:
+        - label: 我已成功下载或加载完整 Skill，并能读取根目录 SKILL.md。
+          required: true
