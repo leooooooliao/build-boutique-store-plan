@@ -24,6 +24,8 @@ function validateReadme() {
     "给任意 AI 的安装提示词",
     "第一次使用提示词",
     "不得假装安装成功",
+    "从“跑品带量”升级为“精品店沉淀”",
+    "达人难以判断这家店适合什么人",
   ];
   const missing = requiredFragments.filter((fragment) => !readme.includes(fragment));
   if (missing.length > 0) {
