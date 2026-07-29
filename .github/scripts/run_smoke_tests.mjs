@@ -30,6 +30,8 @@ function validateReadme() {
     "同一个 Excel 的两个 Sheet",
     "直接在对话中分两段粘贴",
     "达人找不到清晰的合作主题",
+    "固定入口（以后都用这两个）",
+    "本 README 是唯一持续维护的使用说明",
   ];
   const missing = requiredFragments.filter((fragment) => !readme.includes(fragment));
   if (missing.length > 0) {
