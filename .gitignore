@@ -22,5 +22,9 @@ portfolio-audit.json
 portfolio-*.json
 *-portfolio-audit.json
 
+# Synthetic fixtures are safe and required by CI
+!tests/fixtures/id.tsv
+!tests/fixtures/names.tsv
+
 # Locally built release packages
 build-boutique-store-plan-v*.zip
