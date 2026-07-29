@@ -1,0 +1,66 @@
+{
+  "schema_version": "1.0.0",
+  "window": {
+    "start": "2026-07-01",
+    "end": "2026-07-26"
+  },
+  "plans": [
+    {
+      "rank": 1,
+      "theme_name": "高效厨房店",
+      "country": "MY",
+      "target_shop_id": "7490000000000000001",
+      "target_shop_name": "Kitchen Hub",
+      "candidate_gmv": 1000,
+      "target_shop_existing_gmv": 200,
+      "outside_shop_gmv": 800,
+      "target_shop_existing_gmv_share": 0.2,
+      "outside_shop_gmv_share": 0.8,
+      "source_shop_count": 3,
+      "archetype_count": 4,
+      "archetypes_already_in_target_shop": 1,
+      "existing_archetype_share": 0.25,
+      "classification": "reorganization",
+      "priority_reason": "店外 GMV 占比高且来源分散，具备真实跨店集中价值",
+      "ranking_override": null
+    },
+    {
+      "rank": 2,
+      "theme_name": "车主清洁与应急店",
+      "country": "MY",
+      "target_shop_id": "7490000000000000002",
+      "target_shop_name": "Auto Ready",
+      "candidate_gmv": 800,
+      "target_shop_existing_gmv": 320,
+      "outside_shop_gmv": 480,
+      "target_shop_existing_gmv_share": 0.4,
+      "outside_shop_gmv_share": 0.6,
+      "source_shop_count": 2,
+      "archetype_count": 3,
+      "archetypes_already_in_target_shop": 1,
+      "existing_archetype_share": 0.333333,
+      "classification": "reorganization",
+      "priority_reason": "多数候选 GMV 位于承接店外，可形成第二个清晰重组主题",
+      "ranking_override": null
+    },
+    {
+      "rank": 3,
+      "theme_name": "居家按摩与恢复店",
+      "country": "MY",
+      "target_shop_id": "7490000000000000003",
+      "target_shop_name": "Recovery Home",
+      "candidate_gmv": 700,
+      "target_shop_existing_gmv": 490,
+      "outside_shop_gmv": 210,
+      "target_shop_existing_gmv_share": 0.7,
+      "outside_shop_gmv_share": 0.3,
+      "source_shop_count": 2,
+      "archetype_count": 4,
+      "archetypes_already_in_target_shop": 3,
+      "existing_archetype_share": 0.75,
+      "classification": "refinement",
+      "priority_reason": "核心货盘多数已在承接店，价值主要来自聚焦去杂和统一内容",
+      "ranking_override": null
+    }
+  ]
+}

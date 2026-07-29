@@ -1,0 +1,171 @@
+{
+  "schema_version": "1.0.0",
+  "source": {
+    "system": "GCRM Marketing Advisor",
+    "page_url": "https://mmm.tiktok-row.net/gcrm_overseas/phoenix/marketing-advisor/product-insights/top-product",
+    "taxonomy_snapshot": "2026-07-28"
+  },
+  "browser": {
+    "state": "evidence_collected",
+    "adapter": "Aime Chrome",
+    "local_authenticated_session": true,
+    "attempted_paths": ["dom"]
+  },
+  "queries": [
+    {
+      "query_id": "my-kitchen-202607",
+      "theme_rank": 1,
+      "theme_name": "高效厨房店",
+      "country": "MY",
+      "category": {
+        "l1": "厨房用品",
+        "l2": "厨房清洁用品",
+        "l2_status": "selected"
+      },
+      "window": {
+        "start": "2026-06-29",
+        "end": "2026-07-28"
+      },
+      "filter_url": "https://mmm.tiktok-row.net/gcrm_overseas/phoenix/marketing-advisor/product-insights/top-product?country=MY&category=kitchen",
+      "captured_at": "2026-07-29T15:30:00+08:00",
+      "result_status": "success",
+      "row_count": 50,
+      "proof": {
+        "capture_method": "dom",
+        "screenshot_ref": "gcrm-my-kitchen-202607.png"
+      }
+    },
+    {
+      "query_id": "my-auto-202607",
+      "theme_rank": 2,
+      "theme_name": "车主清洁与应急店",
+      "country": "MY",
+      "category": {
+        "l1": "汽车与摩托车",
+        "l2": "汽车清洁",
+        "l2_status": "selected"
+      },
+      "window": {
+        "start": "2026-06-29",
+        "end": "2026-07-28"
+      },
+      "filter_url": "https://mmm.tiktok-row.net/gcrm_overseas/phoenix/marketing-advisor/product-insights/top-product?country=MY&category=auto",
+      "captured_at": "2026-07-29T15:36:00+08:00",
+      "result_status": "success",
+      "row_count": 50,
+      "proof": {
+        "capture_method": "dom",
+        "screenshot_ref": "gcrm-my-auto-202607.png"
+      }
+    },
+    {
+      "query_id": "my-care-202607",
+      "theme_rank": 3,
+      "theme_name": "居家按摩与恢复店",
+      "country": "MY",
+      "category": {
+        "l1": "保健",
+        "l2": null,
+        "l2_status": "not_available"
+      },
+      "window": {
+        "start": "2026-06-29",
+        "end": "2026-07-28"
+      },
+      "filter_url": "https://mmm.tiktok-row.net/gcrm_overseas/phoenix/marketing-advisor/product-insights/top-product?country=MY&category=care",
+      "captured_at": "2026-07-29T15:42:00+08:00",
+      "result_status": "success",
+      "row_count": 50,
+      "proof": {
+        "capture_method": "dom",
+        "screenshot_ref": "gcrm-my-care-202607.png"
+      }
+    }
+  ],
+  "candidates": [
+    {
+      "query_id": "my-kitchen-202607",
+      "theme_rank": 1,
+      "theme_name": "高效厨房店",
+      "product_id": "1730000000000000001",
+      "original_title": "Multi-function Electric Spin Scrubber",
+      "chinese_name": "多功能电动清洁刷",
+      "original_shop_name": "Kitchen Star",
+      "country": "MY",
+      "category": {
+        "l1": "厨房用品",
+        "l2": "厨房清洁用品",
+        "l2_status": "selected"
+      },
+      "window": {
+        "start": "2026-06-29",
+        "end": "2026-07-28"
+      },
+      "gmv_range": "USD 10K–20K",
+      "growth_range": "+20%–30%",
+      "channel_ranges": {
+        "LIVE": "USD 4K–8K",
+        "VIDEO": "USD 5K–10K"
+      },
+      "image_url": "https://example.com/kitchen.png",
+      "filter_url": "https://mmm.tiktok-row.net/gcrm_overseas/phoenix/marketing-advisor/product-insights/top-product?country=MY&category=kitchen",
+      "captured_at": "2026-07-29T15:30:00+08:00"
+    },
+    {
+      "query_id": "my-auto-202607",
+      "theme_rank": 2,
+      "theme_name": "车主清洁与应急店",
+      "product_id": "1730000000000000002",
+      "original_title": "Portable Car Vacuum Cleaner",
+      "chinese_name": "便携车载吸尘器",
+      "original_shop_name": "Car Tool Mall",
+      "country": "MY",
+      "category": {
+        "l1": "汽车与摩托车",
+        "l2": "汽车清洁",
+        "l2_status": "selected"
+      },
+      "window": {
+        "start": "2026-06-29",
+        "end": "2026-07-28"
+      },
+      "gmv_range": "USD 8K–12K",
+      "growth_range": "+10%–15%",
+      "channel_ranges": {
+        "LIVE": "USD 2K–4K",
+        "VIDEO": "USD 5K–7K"
+      },
+      "image_url": "https://example.com/car.png",
+      "filter_url": "https://mmm.tiktok-row.net/gcrm_overseas/phoenix/marketing-advisor/product-insights/top-product?country=MY&category=auto",
+      "captured_at": "2026-07-29T15:36:00+08:00"
+    },
+    {
+      "query_id": "my-care-202607",
+      "theme_rank": 3,
+      "theme_name": "居家按摩与恢复店",
+      "product_id": "1730000000000000003",
+      "original_title": "Deep Tissue Massage Gun",
+      "chinese_name": "深层筋膜按摩枪",
+      "original_shop_name": "Recovery Lab",
+      "country": "MY",
+      "category": {
+        "l1": "保健",
+        "l2": null,
+        "l2_status": "not_available"
+      },
+      "window": {
+        "start": "2026-06-29",
+        "end": "2026-07-28"
+      },
+      "gmv_range": "USD 7K–10K",
+      "growth_range": "暂无可靠涨幅",
+      "channel_ranges": {
+        "LIVE": "USD 3K–5K",
+        "VIDEO": "USD 3K–5K"
+      },
+      "image_url": "https://example.com/care.png",
+      "filter_url": "https://mmm.tiktok-row.net/gcrm_overseas/phoenix/marketing-advisor/product-insights/top-product?country=MY&category=care",
+      "captured_at": "2026-07-29T15:42:00+08:00"
+    }
+  ]
+}

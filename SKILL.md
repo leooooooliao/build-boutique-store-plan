@@ -1,155 +1,203 @@
 ---
 name: build-boutique-store-plan
-description: Turn one merchant's complete multi-shop SKU portfolio into a stable Top 3 boutique-store plan, then verify structural assortment gaps with GCRM Marketing Advisor evidence. Use when a user asks to 把跑品商家的爆品集中到精品大店、重组多个 Shop ID 下的货盘、判断哪些好货适合放在一起、给现有店升级建议、补充同主题新品、判断达人/短视频/直播方向，或要求从两份商家 SKU 导出生成可交付的飞书精品店方案。
+description: Turn one merchant or group’s complete multi-shop SKU portfolio into a Top 3 boutique-store plan, then verify structural assortment gaps with GCRM Marketing Advisor evidence. Use when a user asks to 把跑品商家的爆品集中到精品大店、重组多个 Shop ID 下的货盘、判断哪些好货适合放在一起、升级现有店、补充同主题新品、规划达人/短视频/直播方向，或从双源 SKU 数据生成可交付的飞书精品店建议。
 ---
 
 # 精品大店规划
 
-把同一客户分散在多个 Shop ID 下、已经验证过的好货，重组为主题清晰的精品大店；营销参谋只用于验证结构性缺口和补品，不用于倒推客户整体大盘。
+把同一客户分散在多个 Shop ID 下、已经验证过的好货，重组为主题清晰的精品大店。先用客户货盘形成主题，再用营销参谋验证结构性缺口和补品；不要用营销参谋倒推客户整体大盘。
 
-本 Skill 的策略单元是“商品原型 × 使用场景 × 店铺主题”，不是单个 Product ID。Product ID 是数据校准和证据锚点。
+始终遵守两条原则：
 
-## 1. 先走输入闸门
+1. **内部报表输出什么，就按什么分析。** 不纠正、不改写、不拿外部数据覆盖。
+2. **营销参谋是完整报告必经阶段。** 任意 AI 都必须实际提出并执行，不能静默跳过。
 
-在读取数据或给出任何策略前，先读 `references/interaction.md` 和 `references/data-contract.md`。
+## 1. 先完成首次交互
 
-先把包含本文件的目录解析为 `<SKILL_ROOT>`。所有脚本都从该目录运行，或使用脚本的绝对路径；不得假设当前工作目录就是 Skill 目录。
+先解析包含本文件的目录为 `<SKILL_ROOT>`，再完整读取：
 
-优先使用 Node.js 18+ 运行随包脚本。宿主无 Node 时，立即读 `references/agent-compatibility.md`，用等价数据工具复现合同，并明确未运行随包脚本。
+- `references/interaction.md`
+- `references/data-contract.md`
 
-如果用户没有同时提供两份完整数据和两个明确周期，逐字输出 `references/interaction.md` 中的首次交互；只列缺失项，然后停止正式分析。不得先看一部分数据“试着做”，不得自行猜商家、国家或日期。
+第一条回复必须先做浏览器预检：
 
-两份数据缺一不可：
+- Amy 用户：点击输入框下方【拓展】→ 开启【Aime Chrome】；“Aime Chrome”就是开关实际名称。
+- Mira 或其他 AI：按当前宿主真实界面给出一个具体动作，开启可操作当前已登录浏览器的能力；不知道按钮名称时不要编造。
+- 使用本地已登录浏览器，不使用云端浏览器授权。
 
-1. ID 层级主数据：<https://mmm.tiktok-row.net/apps/analytics/biportal/report/edit/1324598>
+然后要求用户提供：
+
+- ID 层级数据和名称对照数据。推荐上传一个含两个 Sheet 的 Excel；也可在对话中分两段粘贴完整表格并标注来源；
+- 客户/集团名称，仅用于报告标题；
+- 客户货盘准确起止日；
+- 营销参谋准确起止日。
+
+两个报表都必须先把“商家”切换为同一目标客户：
+
+1. ID 层级数据：<https://mmm.tiktok-row.net/apps/analytics/biportal/report/edit/1324598>
 2. 名称对照数据：<https://mmm.tiktok-row.net/apps/analytics/biportal/report/edit/1324606>
 
-两个链接均仅限有权限的登录用户访问。Skill 公开不代表获得内部系统权限。
+不要要求用户补 L3、cost、名称、国家或其他空值；不要要求用户清洗或修改源数据。国家从表内识别，金额沿用内部报表原口径。客户/集团名称和具体 `shop_name` 不同属于正常情况。
+客户/集团名称缺失时使用“目标客户”作临时标题继续，不把它当作经营分析阻断项。
 
-强制确认：
+## 2. 只阻断真正不可分析的问题
 
-- 两个报表都已把“商家”筛选改成用户实际要分析的同一商家。
-- 两份客户数据覆盖同一商家、同一准确起止日，且包含完整表头和全量行。
-- 用户给出客户货盘准确周期和营销参谋准确周期；“近 30 天”也必须解析为具体起止日。
-- Shop ID、Product ID 保持文本；出现科学计数法、小数或末位被改成 0 时停止并要求重拉。
-- 跨国数据保留国家和币种；不同币种不得直接横加。
-
-若宿主能读取 XLSX，直接读取两个独立工作表。若只收到粘贴表格，分别保存为 UTF-8 TSV/CSV；不要要求用户做宿主本来可以完成的转换。
-
-运行输入校验：
+优先运行 Node.js 18+ 随包脚本。一个 XLSX 两个 Sheet 时：
 
 ```bash
 node "<SKILL_ROOT>/scripts/validate_input.mjs" \
-  --id-data "<01_ID主数据.csv|tsv>" \
-  --name-data "<02_名称对照.csv|tsv>" \
-  --merchant "<商家名称>" \
-  --currency "<USD|各国本币分国展示|其他明确口径>" \
-  --confirm-same-merchant yes \
-  --confirm-same-period yes \
+  --workbook "<客户货盘.xlsx>" \
+  --merchant "<客户或集团名称>" \
   --merchant-window "YYYY-MM-DD..YYYY-MM-DD" \
   --gcrm-window "YYYY-MM-DD..YYYY-MM-DD" \
   --json
 ```
 
-只有校验结果为 `ok: true`，且同商家/同客户周期确认均为 `yes` 才能继续。先向用户回执两表行数、国家、金额口径、ID 格式、两个周期、重复数、匹配率、命名 GMV 覆盖率和未匹配 ID 数。名称覆盖不足时标为“语义覆盖不完整”，只用有名称的已验证强品形成主题，不假装理解全部商品。
+收到两段粘贴数据或两个文本表格时，先由 AI 保存为带完整表头的临时文件，再使用：
 
-## 2. 固定数据事实层
+```bash
+node "<SKILL_ROOT>/scripts/validate_input.mjs" \
+  --id-data "<ID层级.csv|tsv>" \
+  --name-data "<名称对照.csv|tsv>" \
+  --merchant "<客户或集团名称>" \
+  --merchant-window "YYYY-MM-DD..YYYY-MM-DD" \
+  --gcrm-window "YYYY-MM-DD..YYYY-MM-DD" \
+  --json
+```
+
+只有 `hard_blockers` 才向用户追问：
+
+- 文件无法读取、为空或无法识别两张来源表；
+- 隔离少量损坏行后，核心 Product ID / Shop ID 仍整体不可用；
+- ID 层级表完全没有可用商品—店铺记录；
+- 缺少且无法确认准确时间窗口。
+
+`auto_handled` 和 `notices` 直接记录后继续。空 L3、空 cost、空名称、空国家、多名称、部分国家缺失、集团名与店名不同和极端值均不阻断。一次列全真正阻断项，不发 A/B/C 选择题。
+
+宿主没有 Node 时，读取 `references/agent-compatibility.md`，用等价工具复现数据合同；不得声称运行了随包脚本。
+
+## 3. 建立不可改写的事实层
 
 运行：
 
 ```bash
 node "<SKILL_ROOT>/scripts/prepare_portfolio.mjs" \
-  --id-data "<01_ID主数据.csv|tsv>" \
-  --name-data "<02_名称对照.csv|tsv>" \
-  --merchant "<商家名称>" \
-  --currency "<已确认金额口径>" \
-  --confirm-same-merchant yes \
-  --confirm-same-period yes \
+  --workbook "<客户货盘.xlsx>" \
+  --merchant "<客户或集团名称>" \
   --merchant-window "YYYY-MM-DD..YYYY-MM-DD" \
   --gcrm-window "YYYY-MM-DD..YYYY-MM-DD" \
-  --output "<任务输出目录>/portfolio-audit.json"
+  --output "<任务输出目录>/portfolio-audit.json" \
+  --analysis-output "<任务输出目录>/analysis-pool.json"
 ```
+
+若输入为两段粘贴表格，先保存为临时数据文件，再改用 `--id-data` 和 `--name-data`。
 
 严格遵守：
 
-- ID 主数据是唯一数值事实源。按 `国家 × shop_id × product_id` 聚合。
-- GMV、成本、销量等可加指标求和；ROAS、占比、转化率等比率必须用分子/分母重算，不得平均。
-- 名称对照表只建立商品名和店名别名字典，绝不参与 GMV 加总。
-- Product ID 对应多个商品名、Shop ID 对应多个店名时，以 ID 校准；展示一个最完整的非空名称并保留别名。没有时间戳时不得称其为“最新名称”。
-- 不得用 Top 商品加总推客户整体大盘、市场份额或新店 GMV 预测。
-- 跨国候选分别计算，禁止把不同币种 GMV 直接相加。
-- 消耗低于 0.01 的极高 ROAS 只能标为“低消耗方向性信号”，不得据此判定强品。
+- ID 层级数据是唯一经营数值事实源，按 `国家或 UNKNOWN × shop_id × product_id` 聚合。
+- `payment_1d` 等经营字段按内部报表原口径使用，不校正、不换算。
+- 名称表只建立商品名和店名别名字典，不参与 GMV、cost 或广告指标加总。
+- Product ID / Shop ID 校准实体；集团名只用于标题，`shop_name` 是具体店铺名。
+- 空数值不按 0，只排除在对应指标之外；保留指标覆盖率。
+- GMV 使用全部有效 GMV；ROAS 只用 GMV 与 cost 同时有效的记录重算。
+- L3 为空时按名称判断商品原型，保留推断标记，不覆盖源字段。
+- 国家缺失时只在同 Shop ID 唯一对应一个国家时推断，否则保留 UNKNOWN。
+- 默认分国展示，不做没有源数据依据的跨国金额横加或排名。
+- 不用 Top 商品加总推客户整体大盘、市场份额或新店 GMV。
 
-任何关键列缺失、ID 精度异常、两表周期不一致或匹配率异常时，停止并给出可操作的重拉建议。
+`portfolio-audit.json` 保留全量聚合与明细用于审计；AI 先读取较小的 `analysis-pool.json`，不要先把全量 Product ID 放进上下文。精简候选池按 `payment_1d` 排序，并按 `country × product_id` 跨 Shop 汇总，同时保留来源 Shop 明细。默认先审阅 Top 100；当主题不足、名称覆盖不足或 GMV 过于分散时自动扩到 Top 200，不向用户确认，也不把 100/200 写成商家必须采用的商品数量。
 
-## 3. 从好货组合出 Top 3 主题店
+向用户回执只需说明：读取成功、两表行数、识别国家、ID 状态、两个周期和自动处理摘要。不要把每个空值变成确认题。
 
-读 `references/analysis-rules.md`。
+## 4. 组合 Top 3 精品店主题
 
-先把标题归纳为商品原型，再按使用场景和内容叙事形成候选主题。默认给出三个优先级不同的精品店方案；若证据不足以支持三个，明确说明为什么更少，禁止为了凑数跨主题硬拼。
+读取 `references/analysis-rules.md` 和 `references/plan-evidence.md`。
 
-每个候选必须：
+先把商品标题归纳为商品原型，再按用户、场景和内容叙事组合主题。默认给出三个优先级不同的方案；证据不足时给真实数量并说明原因，不跨主题硬凑。
 
-- 只属于一个国家和币种。
-- 选择一个现有 Shop ID 作为承接店，优先升级现有店，不建议无必要新开空店。
-- 至少有一组已验证核心货盘，并能解释为什么这些商品适合在同一主题下销售。
-- 同时审计已验证强度、跨店分散度、承接店纯度、主题一致性、内容可演示性和执行风险。
-- 计算核心货盘 GMV、加权 ROAS、承接店外 GMV 占比、来源 Shop ID 数，并保留明细以便审计。
+每个候选：
 
-商品组合建议只回答：
+- 只属于一个已识别国家；UNKNOWN 商品不得悄悄并入某国。
+- 优先选择一个现有 Shop ID 升级，不无必要新开空店。
+- 使用一组已验证核心货盘，并解释商品为什么适合放在一起。
+- 审计货盘强度、跨店分散度、承接店纯度、主题一致性、内容可演示性和执行风险。
+- 计算候选核心 GMV、可计算范围内的 ROAS、承接店外 GMV 占比和来源 Shop ID 数。
+- 判断方案是“重组型”还是“精修型”。若超过一半的核心候选 GMV，或大部分商品原型本来就在承接店，默认降低优先级；除非其主题纯度、经营强度或落地可行性明显更优，否则优先选择能把其他店铺好货真正集中起来的方案。
 
-- 哪些商品原型适合放在一起。
-- 哪些同质变体存在重叠，需要商家合并评估。
-- 哪些商品会让主题漂移，应排除或后置。
-- 哪些结构性场景仍缺货。
+只给主题、候选商品、互补/重叠和排除建议。不要规定最终主推款数量、SKU 数、尺寸、规格或固定“引流款/利润款/形象款”角色。
 
-不要规定必须只留几个主推款、几个尺寸、哪个具体尺寸或固定 SKU 角色。最终数量、规格、价带和套装由商家结合库存、毛利、供应链、履约、售后和内容表现评估。没有充分数据时，也不要强行划分“引流款/利润款/形象款”。
+写出并验证方案排序证据：
 
-## 4. 营销参谋只验证补品
+```bash
+node "<SKILL_ROOT>/scripts/validate_plan_evidence.mjs" \
+  --evidence "<plan-evidence.json>" \
+  --merchant-window "YYYY-MM-DD..YYYY-MM-DD" \
+  --expected-plans "<实际方案数，默认 3>"
+```
 
-确定 Top 3 主题后再读 `references/gcrm-integration.md`。不要在主题形成前遍历营销参谋。
+让程序核算重组型/精修型及默认排序；不要只靠正文标签自行判断。精修型不被机械淘汰；若排在某个重组型之前，必须按 `references/plan-evidence.md` 提供主题纯度、经营强度或落地可行性的结构化例外理由。
 
-若环境已安装 `$build-gcrm-hot-product-report`，调用它复用榜单提取、Product ID 对齐、区间保留和图片规则；本 Skill 负责限定国家、类目、周期和店铺主题。若不可调用，按 `references/gcrm-integration.md` 的工具中立流程执行。
+## 5. 强制完成营销参谋
+
+Top 3 主题确定后，读取 `references/gcrm-integration.md` 和 `references/agent-compatibility.md`。
+
+有 `$build-gcrm-hot-product-report` 时复用其提取和图片规则；没有时直接按本 Skill 的工具中立流程查询。安装另一个 Skill 不是浏览器授权，也不是跳过查询的理由。
 
 对每个主题：
 
-1. 只查询该国家下最贴近主题的一级/二级类目，使用页面当前原始标签。
-2. 先看 GMV Top 50；只有有效候选不足时才扩 Top 100 或飙升榜。
-3. 只补“主题内真实缺口”，通常保留少量高证据候选；没有合格候选时明确不补，不设数量配额。
-4. 保留 Product ID、营销参谋原店铺名、商品图/截图、平台类目、GMV 区间、涨幅、Live/Video/Card 区间和筛选页 URL。原店铺名用于让商家回到榜单定位原品。
-5. 涨幅超过 300% 时标记“低基数/促销风险”，不得直接称为持续趋势。
-6. 只凭标题相似不能确认同品；Product ID 不同只能称商品原型候选。
+1. 使用该主题的国家、准确周期和最贴近的一级/二级类目。
+2. 实际打开营销参谋并核验页面筛选状态，等待加载完成。
+3. 先看 GMV Top 50；有效候选不足时再扩 Top 100 或飙升榜。
+4. 只补主题内真实缺口，不设数量配额。
+5. 保存 Product ID、原始标题、中文短名、原 Shop Name、类目、GMV/涨幅/渠道区间、商品图或截图、筛选页 URL 和含时区的采集时间。
+6. 把补品证据与对应图片、店铺和来源逐一绑定。
 
-客户周期与营销参谋周期不一致时，只能把客户数据用于货盘重组、营销参谋用于补品验证；不得直接比较绝对 GMV、推市场份额或预测增量。
+每个实际方案都必须至少有一次成功查询；在查询和补品证据中写入对应的 `theme_rank`、`theme_name`。不能用一个主题的营销参谋结果替另外两个主题过关。
 
-## 5. 给内容渠道建议
+浏览器未授权或未登录时，只向用户提出一个当前动作，完成后重试。页面控件失败时依次尝试 DOM、键盘/视觉操作和同登录态页面请求；不得要求用户为每个国家、类目逐组手切。所有安全路径失败时写入 `partial`。
+
+完整报告只接受由证据文件推导出的：
+
+- `verified`：已获取并核验候选；
+- `verified_no_candidate`：已真实查询指定国家、类目和周期；逐次保留含时区采集时间、实际读取行数和证据引用，但无合格候选。
+
+浏览器不可用、登录失败、页面操作失败或找不到另一个 Skill 都是 `partial`，不是“无候选”。用户若决定暂时停止，只能交付醒目标注的“精品店方案部分草稿｜营销参谋待完成”，不能称为完整精品店方案。
+
+客户周期与营销参谋周期不一致时，分别用于货盘重组和补品验证，不直接比较绝对 GMV。
+
+## 6. 给内容渠道建议
 
 根据营销参谋渠道结构、商品可演示性、客单和决策成本判断：
 
-- 需要持续演示、答疑或高客单的设备，可偏直播承接。
-- 前后对比强、低理解门槛、低客单的商品，可偏短视频和达人铺量。
+- 持续演示、答疑或高客单设备可偏直播承接。
+- 前后对比强、理解门槛低的商品可偏短视频和达人铺量。
 - 证据混合时给组合打法，不强行二选一。
 
-把“达人/短视频/直播”写成内容与成交建议，不写成无数据支撑的 SKU 角色。区分平台事实与分析推断；推断必须标注“判断”或“推测”。
+把渠道写成内容和成交建议，不写成无数据支撑的 SKU 角色。事实与判断分开，推断标注为“判断”。
 
-## 6. 按固定结构交付
+## 7. 交付一份好看且可审计的文档
 
-读 `references/output-contract.md`、`references/quality-gates.md` 和 `references/agent-compatibility.md`。使用 `assets/report-template.md` 作为结构骨架，不把占位符原样交付。
+读取：
 
-有飞书文档能力时，创建一份可编辑飞书文档，并：
+- `references/output-contract.md`
+- `references/quality-gates.md`
+- `assets/report-template.md`
 
-- 首屏写完整“全文数据窗口”：客户货盘起止日/天数、营销参谋起止日/天数、生成日、国家和币种口径。
-- 用一个总表给出 Top 3 精品店优先级。
-- 每店展示承接 Shop ID、核心货盘、来源店、组合/去重建议、渠道打法、营销参谋补品和执行风险。
-- 营销参谋候选同时放商品图或截图、Product ID、营销参谋原店铺名、区间指标和可点击筛选页 URL。
-- 末尾写数据边界：核心货盘 GMV 不等于客户整体大盘，也不是新店预测。
-- 创建后回读一次，核对标题、两个时间窗口、表格、图片和链接。
+优先创建可编辑飞书文档；不能写飞书时使用 Markdown、HTML 或宿主原生文档。
 
-没有飞书能力时，输出同结构 Markdown 或宿主可编辑文档，并明确“未创建在线飞书文档”。没有登录浏览器或营销参谋权限时，要求用户补导出；不得假装已实时查询。
+固定的是信息和证据，不是逐字模板。保留这些视觉特征：
 
-## 7. 强制报告 QA
+- 首屏结论和 Top 3 总表；
+- 清晰层级与适量留白；
+- 商品图靠近对应营销参谋证据；
+- 表格、图片与可点击 URL 互相对应；
+- 一种克制的重点色和可快速扫描的卡片/提示块。
 
-将最终 Markdown、HTML 或导出的纯文本保存为文件后运行：
+允许 Amy、Mira 或其他宿主采用最自然的组件，不机械复刻 Sample。创建飞书文档后回读，核验标题、两个时间窗口、表格、图片和链接。
+
+## 8. 报告 QA
+
+保存最终文档的可校验文本后运行：
 
 ```bash
 node "<SKILL_ROOT>/scripts/validate_report.mjs" \
@@ -157,37 +205,34 @@ node "<SKILL_ROOT>/scripts/validate_report.mjs" \
   --merchant-window "YYYY-MM-DD..YYYY-MM-DD" \
   --gcrm-window "YYYY-MM-DD..YYYY-MM-DD" \
   --generated-date "YYYY-MM-DD" \
-  --gcrm-mode "<verified|no-candidate|unavailable>" \
-  --expected-gcrm-products "<实际补品数量>" \
+  --plan-evidence "<plan-evidence.json>" \
+  --gcrm-evidence "<gcrm-evidence.json>" \
   --expected-top "<实际方案数，默认 3>"
 ```
 
-交付前必须通过：
+不要让模型手填营销参谋状态或方案类型。校验器必须从 `gcrm-evidence.json` 推导 `verified`、`verified_no_candidate` 或 `partial`，并从 `plan-evidence.json` 核算重组型/精修型和排序；只有营销参谋前两种状态且方案证据通过时，完整报告 QA 才能通过。
 
-- 两个准确时间窗口和生成日均出现。
-- Top 3 有优先级、主题、承接 Shop ID 和核心指标；不足三个时有明确证据说明。
-- 每个营销参谋补品有 Product ID、营销参谋原店铺名、区间指标、图片/截图和来源 URL；无补品时写明原因。
-- 不出现“只留 1 个主推款”“固定几个尺寸”等硬性数量建议。
-- GCRM 页面国家、日期和原始类目已核验。
-- 飞书文档已回读；图片和链接数量与计划一致。
+交付前确认：
 
-QA 失败先修正文档，再交付。
+- 两个准确窗口、生成日和识别国家已出现。
+- Top 3 有优先级、主题、承接 Shop ID 和候选范围指标。
+- 每个方案的店内/店外 GMV、商品原型、重组/精修分类和排序理由已通过结构化方案证据校验。
+- 每个补品都有 Product ID、原始标题、中文短名、原 Shop Name、区间指标、图片、URL 和含时区采集时间。
+- 无候选结论逐次展示实际查询范围、含时区采集时间、读取行数和证据引用。
+- 没有固定主推数量、尺寸或规格建议。
+- 数据说明覆盖自动推断、可选指标覆盖率和未出现国家。
+- 飞书文档已回读，图片与链接一一对应。
 
-## 8. 固定项与 AI 判断边界
+QA 失败先修正文档再交付；营销参谋未完成时不得通过完整报告 QA。
 
-固定执行：首次交互、双源事实层、ID 聚合、比率重算、双时间窗口、Top 3 输出结构、GCRM 证据字段、飞书回读和报告 QA。
+## 9. 时间优化
 
-允许 AI 判断：商品原型提炼、主题命名、互补/重叠关系、承接店选择、跨店迁移风险、内容渠道叙事和最终文案。所有判断必须能回到 Product ID、Shop ID 或营销参谋证据。
+- 先定 Top 3，再查对应国家 × 类目，不遍历全市场。
+- 默认查最贴近主题的类目和 GMV Top 50，证据不足再扩。
+- 使用榜单缩略图/截图和筛选页链接，不逐个抓商品详情页。
+- 不制作中间汇报 Excel；Excel 只作输入，最终交付一份文档。
+- 把确定性清洗和 QA 交给脚本，把 AI 时间留给主题与组合判断。
 
-## 9. 节省时间但不降质
+## 10. 权限边界
 
-- 先定 Top 3，再查对应国家 × 类目；不遍历全市场。
-- 默认只查最贴近主题的类目和 GMV Top 50；证据不足再扩。
-- 默认使用榜单缩略图/截图和筛选页链接，不逐个抓商品详情页。
-- 不制作中间汇报 Excel；Excel 仅作输入载体，最终只交付一份文档。
-- 补品不设配额，无有效候选即停止扩展。
-- 用脚本处理清洗、聚合和 QA；把 AI 时间留给主题与组合判断。
-
-## 10. 数据和权限边界
-
-不得把客户原始数据、真实 Product ID / Shop ID、Cookie、Token 或内部账号信息写入公开 Skill、公开仓库或 Release。任务所需的内部 BI 和 GCRM 入口可以保留；链接本身不授予权限，仍只对已获授权的登录用户有效。
+不绕过登录或权限，不索要账号密码、Cookie 或 Token。不把客户数据、真实 Product ID / Shop ID、内部截图或任务报告写入公开 Skill、公开仓库或 Release。

@@ -1,0 +1,26 @@
+{
+  "gcrm_core_version": "1.1.0",
+  "created_at": "2026-07-29",
+  "source_skill": {
+    "name": "build-gcrm-hot-product-report",
+    "version": "v1.3.0",
+    "commit": "5d7c20a1b312aa927f61f47b23d21dbfb6070c1d"
+  },
+  "taxonomy": {
+    "name": "GCRM Top Product 一级类目",
+    "snapshot": "2026-07-28",
+    "source_verified_at": "2026-07-28",
+    "source_page": "https://mmm.tiktok-row.net/gcrm_overseas/phoenix/marketing-advisor/product-insights/top-product"
+  },
+  "included": [
+    "country and level-1 category taxonomy",
+    "authenticated local-browser state machine",
+    "evidence schema and validator",
+    "collection runbook"
+  ],
+  "excluded": [
+    "standalone GCRM Excel report builder",
+    "standalone candidate workbook",
+    "browser credentials or session data"
+  ]
+}

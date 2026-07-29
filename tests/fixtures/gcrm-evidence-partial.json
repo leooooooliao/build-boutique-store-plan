@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0.0",
+  "source": {
+    "system": "GCRM Marketing Advisor",
+    "page_url": "https://mmm.tiktok-row.net/gcrm_overseas/phoenix/marketing-advisor/product-insights/top-product",
+    "taxonomy_snapshot": "2026-07-28"
+  },
+  "browser": {
+    "state": "capability_blocked",
+    "adapter": "Aime Chrome",
+    "local_authenticated_session": true,
+    "attempted_paths": ["dom", "xhr", "visible_table"]
+  },
+  "queries": [
+    {
+      "query_id": "my-kitchen-blocked-202607",
+      "theme_rank": 1,
+      "theme_name": "厨房",
+      "country": "MY",
+      "category": {
+        "l1": "厨房用品",
+        "l2": null,
+        "l2_status": "not_supported"
+      },
+      "window": {
+        "start": "2026-06-29",
+        "end": "2026-07-28"
+      },
+      "filter_url": "https://mmm.tiktok-row.net/gcrm_overseas/phoenix/marketing-advisor/product-insights/top-product?country=MY&category=kitchen",
+      "captured_at": "2026-07-29T16:20:00+08:00",
+      "result_status": "capability_blocked",
+      "row_count": 0,
+      "proof": {
+        "capture_method": "visible_table",
+        "screenshot_ref": "gcrm-my-kitchen-blocked-202607.png"
+      }
+    }
+  ],
+  "candidates": []
+}
