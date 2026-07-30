@@ -26,6 +26,7 @@ function validateReadme() {
     "不得假装安装成功",
     "Aime 与 Mira 的浏览器授权",
     "不要选择云端浏览器授权",
+    "浮层内自动滚动协议",
     "完整报告必须实际查询营销参谋",
     "同一个 Excel 的两个 Sheet",
     "直接在对话中分两段粘贴",
@@ -39,7 +40,7 @@ function validateReadme() {
   }
 }
 
-function runNode(arguments_, expectedStatus = 0) {
+function runNodeCapture(arguments_, expectedStatus = 0) {
   const result = spawnSync(process.execPath, arguments_, {
     cwd: repositoryRoot,
     encoding: "utf8",
@@ -52,10 +53,116 @@ function runNode(arguments_, expectedStatus = 0) {
       `${arguments_.join(" ")} exited ${result.status}; expected ${expectedStatus}`,
     );
   }
+  return result;
+}
+
+function runNode(arguments_, expectedStatus = 0) {
+  runNodeCapture(arguments_, expectedStatus);
+}
+
+function validateGcrmFilterAutomation() {
+  const runbook = fs.readFileSync(
+    path.join(repositoryRoot, "dependencies/gcrm-core/browser-runbook.md"),
+    "utf8",
+  );
+  for (const fragment of [
+    "build-filter-plan.mjs",
+    "li[role=\"menuitemcheckbox\"][title=\"<CATEGORY>\"]",
+    ".potoo-marketing-advisor-cascader-checkbox",
+    "浮层内部",
+    "浮层展开后再做一次新的完整 `snapshot`",
+    "不要继续使用展开前的旧 ref",
+    "aime-browser click --tab_id=<TAB_ID> --selector='<TARGET_CHECKBOX_SELECTOR>'",
+    "不得因“滚轮滑不动”让用户手选",
+  ]) {
+    if (!runbook.includes(fragment)) {
+      throw new Error(`GCRM browser runbook is missing: ${fragment}`);
+    }
+  }
+
+  const result = runNodeCapture([
+    "dependencies/gcrm-core/build-filter-plan.mjs",
+    "--country",
+    "MY",
+    "--category",
+    "虚拟商品",
+  ]);
+  const plan = JSON.parse(result.stdout);
+  if (plan.manual_selection_required !== false) {
+    throw new Error("GCRM filter plan must not require manual selection.");
+  }
+  if (!plan.country_selection.direct_url.includes("region=MY")) {
+    throw new Error("GCRM filter plan is missing the direct country URL.");
+  }
+  if (
+    !plan.category_selection.target_checkbox_selector.includes(
+      '[title="虚拟商品"]',
+    )
+  ) {
+    throw new Error("GCRM filter plan is missing the exact category selector.");
+  }
+  if (
+    !plan.category_selection.trigger_selector.endsWith(
+      "> .potoo-marketing-advisor-select-selector",
+    ) ||
+    !plan.category_selection.open_strategy.includes(
+      "not the whole root",
+    ) ||
+    !plan.category_selection.target_checkbox_selector.includes(
+      ":not(.potoo-marketing-advisor-select-dropdown-hidden)",
+    )
+  ) {
+    throw new Error(
+      "GCRM filter plan must use the safe category trigger and visible L1 popup.",
+    );
+  }
+  if (
+    plan.country_selection.is_sea_child !== true ||
+    !plan.country_selection.sea_expand_selector.includes('[title="SEA"]') ||
+    !plan.country_selection.collapsed_sea_recovery.includes(
+      "take a fresh full snapshot",
+    )
+  ) {
+    throw new Error(
+      "GCRM filter plan is missing automatic SEA parent expansion.",
+    );
+  }
+  if (
+    !plan.category_selection.target_checkbox_fallback_selector.includes(
+      '[title="虚拟商品"]',
+    ) ||
+    !plan.category_selection.fallback_guard.includes(
+      "fallback count is exactly 1",
+    )
+  ) {
+    throw new Error(
+      "GCRM filter plan is missing the guarded category fallback selector.",
+    );
+  }
+  if (
+    !plan.category_selection.target_checked_selector.includes(
+      '[aria-checked="true"]',
+    ) ||
+    !plan.category_selection.selection_strategy.includes(
+      "only when the target row is not already aria-checked=true",
+    )
+  ) {
+    throw new Error(
+      "GCRM filter plan must not toggle an already selected target category.",
+    );
+  }
+  if (
+    !plan.category_selection.offscreen_strategy.includes(
+      "auto-scrolls inside the category popup",
+    )
+  ) {
+    throw new Error("GCRM filter plan is missing popup auto-scroll guidance.");
+  }
 }
 
 try {
   validateReadme();
+  validateGcrmFilterAutomation();
 
   for (const relativePath of [
     "scripts/lib.mjs",
@@ -64,6 +171,7 @@ try {
     "scripts/validate_plan_evidence.mjs",
     "scripts/validate_report.mjs",
     "dependencies/gcrm-core/validate-evidence.mjs",
+    "dependencies/gcrm-core/build-filter-plan.mjs",
     "tests/data_regression.mjs",
     "tests/validate_report.test.mjs",
     ".github/scripts/validate_public_package.mjs",

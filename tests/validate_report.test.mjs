@@ -216,6 +216,69 @@ assert.equal(
 const partial = run(evidenceArguments("gcrm-evidence-partial.json"), 1);
 assert.equal(JSON.parse(partial.stdout).status, "partial");
 
+const oneAttemptEvidence = JSON.parse(
+  fs.readFileSync(
+    path.join(fixtures, "gcrm-evidence-partial.json"),
+    "utf8",
+  ),
+);
+oneAttemptEvidence.browser.attempted_paths = ["dom"];
+const oneAttemptPath = path.join(
+  temporaryDirectory,
+  "gcrm-evidence-one-attempt.json",
+);
+fs.writeFileSync(
+  oneAttemptPath,
+  `${JSON.stringify(oneAttemptEvidence, null, 2)}\n`,
+);
+const oneAttempt = run(
+  [
+    "dependencies/gcrm-core/validate-evidence.mjs",
+    "--evidence",
+    oneAttemptPath,
+    "--gcrm-window",
+    "2026-06-29..2026-07-28",
+    "--expected-themes",
+    "3",
+    "--json",
+  ],
+  1,
+);
+assert.match(oneAttempt.stdout, /至少 2 条自动恢复路径/);
+
+const manualHandoffEvidence = JSON.parse(
+  fs.readFileSync(
+    path.join(fixtures, "gcrm-evidence-partial.json"),
+    "utf8",
+  ),
+);
+manualHandoffEvidence.browser.attempted_paths = [
+  "dom",
+  "请用户切好后回复",
+];
+const manualHandoffPath = path.join(
+  temporaryDirectory,
+  "gcrm-evidence-manual-handoff.json",
+);
+fs.writeFileSync(
+  manualHandoffPath,
+  `${JSON.stringify(manualHandoffEvidence, null, 2)}\n`,
+);
+const manualHandoff = run(
+  [
+    "dependencies/gcrm-core/validate-evidence.mjs",
+    "--evidence",
+    manualHandoffPath,
+    "--gcrm-window",
+    "2026-06-29..2026-07-28",
+    "--expected-themes",
+    "3",
+    "--json",
+  ],
+  1,
+);
+assert.match(manualHandoff.stdout, /不能把逐组人工筛选或交接用户当作恢复路径/);
+
 const missingExpectedThemes = run(
   evidenceArguments("gcrm-evidence-verified.json").filter(
     (argument, index, arguments_) =>

@@ -7,16 +7,21 @@
 使用内置的 `dependencies/gcrm-core/`。它包含最小筛选 taxonomy、本地浏览器状态机、采集 Runbook、`gcrm-evidence.json` schema 和验证器，不依赖另一个 Skill 才能工作。
 
 1. 先读 `dependencies/gcrm-core/browser-runbook.md`，使用本地已登录浏览器完成筛选和采集。
-2. 按 `dependencies/gcrm-core/evidence.schema.json` 写出结构化证据。
-3. 运行：
+2. 每个国家 × 一级类目组合先运行：
+
+   `node dependencies/gcrm-core/build-filter-plan.mjs --country "<COUNTRY>" --category "<精确一级类目>"`
+
+   按输出的 direct URL 和 selector 操作 Country tree-select 与 Category cascader。类目不在当前视口时用 DOM locator 自动滚入浮层，不让用户滚轮查找或逐组手选。
+3. 按 `dependencies/gcrm-core/evidence.schema.json` 写出结构化证据。
+4. 运行：
 
    `node dependencies/gcrm-core/validate-evidence.mjs --evidence gcrm-evidence.json --gcrm-window YYYY-MM-DD..YYYY-MM-DD --expected-themes <实际方案数>`
 
-4. 状态只能由验证器推导：
+5. 状态只能由验证器推导：
    - `verified`：真实查询全部成功，且至少有一个完整候选；
    - `verified_no_candidate`：真实查询全部成功，有筛选条件、读取行数和查询证据，但没有合格候选；
    - `partial`：未执行、授权失败、能力不足、筛选失败、用户跳过或证据不完整。
-5. `partial` 只能产出明确标注的“部分草稿”，不得作为完整报告交付。
+6. `partial` 只能产出明确标注的“部分草稿”，不得作为完整报告交付。
 
 若宿主也安装了 `build-gcrm-hot-product-report`，可复用其浏览器操作经验；不得把是否发现该 Skill 当作营销参谋是否可执行的判断条件。
 
@@ -52,7 +57,7 @@
 - `xhr`、`dom`、`export` 或 `visible_table` 采集方式
 - 截图、DOM 快照或导出文件中的至少一种证据引用
 
-下拉框或页面控件失败时，按 `DOM → 键盘/视觉 → 同登录态 XHR/API → 页面导出` 恢复。不得要求用户逐个国家、逐个类目手动切换；只允许为浏览器授权或登录请求一次明确动作。恢复路径全部失败时只能标为 `partial`。
+下拉框或页面控件失败时，先运行 `build-filter-plan.mjs`，再按 `direct URL/DOM locator 自动滚动 → 浮层内视觉滚动 → 同登录态 XHR/API → 页面导出` 恢复。页面主体滚轮无效不代表类目浮层不可操作；不得要求用户逐个国家、逐个类目手动切换。只允许为浏览器授权或登录请求一次明确动作。恢复路径全部失败时只能标为 `partial`。
 
 ## 补品选择
 
