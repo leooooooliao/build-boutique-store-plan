@@ -55,8 +55,10 @@ jobs:
             zip -qr "${GITHUB_WORKSPACE}/${archive}" "${skill_name}"
           )
 
+          archive_sha256="$(sha256sum "${archive}" | cut -d ' ' -f1)"
           unzip -l "${archive}"
           echo "RELEASE_ARCHIVE=${archive}" >> "${GITHUB_ENV}"
+          echo "RELEASE_SHA256=${archive_sha256}" >> "${GITHUB_ENV}"
 
       - name: Create the GitHub Release
         env:
@@ -64,7 +66,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          notes_file="${RUNNER_TEMP}/release-notes-${GITHUB_REF_NAME}.md"
+          printf '%s\n\n`build-boutique-store-plan-sha256: %s`\n' \
+            "下载并解压完整 Skill 工具包，打开 README.md 可复制通用 AI 安装提示词和第一次使用提示词。v1.3.0 起每个新任务会先检查官方稳定 Release，有新版才下载并整体更新；旧版用户需手动覆盖安装一次自更新引导版。公开代码不代表获得内部 BI/GCRM 权限；附件不含客户数据、Cookie 或 Token。Release 附件的 download_count 用于统计累计 ZIP 下载次数；GitHub 自动生成的 Source code 压缩包不计入该口径。" \
+            "${RELEASE_SHA256}" > "${notes_file}"
           gh release create "${GITHUB_REF_NAME}" \
             "${RELEASE_ARCHIVE}" \
             --title "精品大店规划 Skill ${GITHUB_REF_NAME}" \
-            --notes "下载并解压完整 Skill 工具包，打开 README.md 可复制通用 AI 安装提示词和第一次使用提示词。v1.3.0 起每个新任务会先检查官方稳定 Release，有新版才下载并整体更新；旧版用户需手动覆盖安装一次自更新引导版。公开代码不代表获得内部 BI/GCRM 权限；附件不含客户数据、Cookie 或 Token。Release 附件的 download_count 用于统计累计 ZIP 下载次数；GitHub 自动生成的 Source code 压缩包不计入该口径。"
+            --notes-file "${notes_file}"
