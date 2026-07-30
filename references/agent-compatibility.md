@@ -2,6 +2,10 @@
 
 本 Skill 以数据合同、浏览器证据和输出合同为核心；AI 可以更换工具，但不能省略营销参谋。
 
+## 版本同步与业务流程分离
+
+每个新任务先按 `self-update.md` 检查一次官方稳定 Release，再进入浏览器预检。更新检查与 Aime Chrome、营销参谋登录是两类独立能力：GitHub 暂时不可访问时继续使用当前版；营销参谋未完成时仍不能交付完整报告。
+
 ## 开始前的浏览器预检
 
 - **Aime：** 提醒用户点击输入框下方【拓展】并开启【Aime Chrome】；“Aime Chrome”就是开关实际名称。操作当前已经登录的本地浏览器，不使用云端浏览器授权。`get_tabs` 只完成标签页发现，不能在这里停止；取得 GCRM tab 后继续运行 `dependencies/gcrm-core/build-filter-plan.mjs` 并按其 selector 操作。
