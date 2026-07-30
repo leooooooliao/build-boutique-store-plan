@@ -12,7 +12,7 @@
 node "<SKILL_ROOT>/scripts/sync_skill_release.mjs" --apply --json
 ```
 
-更新器只接受固定仓库 `leooooooliao/build-boutique-store-plan` 的稳定 SemVer Release，以及精确命名的完整 ZIP。它先访问固定的 `/releases/latest`，只有发现新版并应用更新时才读取 Release API、下载 ZIP、核对 GitHub SHA-256、验证 Skill 身份与包结构并原子替换。符号链接、传错的 Skill 根目录和任何 Git checkout 内的目录都不会被整体替换。更新失败保留旧目录，不逐文件覆盖。
+更新器只接受固定仓库 `leooooooliao/build-boutique-store-plan` 的稳定 SemVer Release，以及精确命名的完整 ZIP。它先访问固定的 `/releases/latest`，只有发现新版才下载 ZIP，并优先从该 Release 页面读取发布流程写入的 SHA-256；旧 Release 没有该标记时才回退到 API。校验通过后再验证 Skill 身份与包结构并原子替换。符号链接、传错的 Skill 根目录和任何 Git checkout 内的目录都不会被整体替换。更新失败保留旧目录，不逐文件覆盖。
 
 按状态处理：
 

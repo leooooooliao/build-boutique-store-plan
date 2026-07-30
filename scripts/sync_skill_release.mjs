@@ -11,6 +11,7 @@ const REPOSITORY = "leooooooliao/build-boutique-store-plan";
 const LATEST_RELEASE_PAGE = `https://github.com/${REPOSITORY}/releases/latest`;
 const LATEST_RELEASE_API = `https://api.github.com/repos/${REPOSITORY}/releases/latest`;
 const RELEASE_TAG_API = `https://api.github.com/repos/${REPOSITORY}/releases/tags`;
+const RELEASE_DIGEST_LABEL = `${SKILL_NAME}-sha256`;
 const MAX_ARCHIVE_BYTES = 64 * 1024 * 1024;
 const DEFAULT_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -115,6 +116,14 @@ async function readJsonResponse(response, label) {
   return response.json();
 }
 
+export function parsePublishedDigest(html) {
+  const pattern = new RegExp(
+    `${RELEASE_DIGEST_LABEL}:\\s*([a-f0-9]{64})`,
+    "i",
+  );
+  return pattern.exec(String(html || ""))?.[1]?.toLowerCase() || null;
+}
+
 async function resolveLatestRelease(options) {
   if (options.releaseJson) {
     return {
@@ -167,11 +176,48 @@ async function hydrateRelease(release, options) {
   if (options.releaseJson) return release;
 
   const tag = release.tag_name;
-  const response = await fetchWithTimeout(
-    `${RELEASE_TAG_API}/${encodeURIComponent(tag)}`,
-    { headers: githubHeaders() },
-  );
-  return readJsonResponse(response, `GitHub Release ${tag}`);
+  const assetName = expectedAssetName(tag);
+  const assetUrl = `https://github.com/${REPOSITORY}/releases/download/${tag}/${assetName}`;
+  const failures = [];
+
+  try {
+    const releasePage = `https://github.com/${REPOSITORY}/releases/tag/${tag}`;
+    const response = await fetchWithTimeout(releasePage, {
+      headers: { "User-Agent": `${SKILL_NAME}-release-sync` },
+    });
+    if (!response.ok) {
+      throw new Error(`release page returned HTTP ${response.status}`);
+    }
+    const digest = parsePublishedDigest(await response.text());
+    if (!digest) {
+      throw new Error(`release page is missing ${RELEASE_DIGEST_LABEL}`);
+    }
+    return {
+      ...release,
+      assets: [
+        {
+          name: assetName,
+          browser_download_url: assetUrl,
+          digest: `sha256:${digest}`,
+        },
+      ],
+      integrity_source: "release_page_manifest",
+    };
+  } catch (error) {
+    failures.push(error.message);
+  }
+
+  try {
+    const response = await fetchWithTimeout(
+      `${RELEASE_TAG_API}/${encodeURIComponent(tag)}`,
+      { headers: githubHeaders() },
+    );
+    return await readJsonResponse(response, `GitHub Release ${tag}`);
+  } catch (error) {
+    failures.push(error.message);
+  }
+
+  throw new Error(failures.join("; "));
 }
 
 function expectedAssetName(tag) {
@@ -195,7 +241,7 @@ function validateOfficialAsset(asset, tag, testMode = false) {
     }
   }
   if (!/^sha256:[a-f0-9]{64}$/i.test(String(asset.digest || ""))) {
-    throw new Error("Release asset is missing a valid GitHub SHA-256 digest.");
+    throw new Error("Release asset is missing a valid published SHA-256 digest.");
   }
 }
 
@@ -375,7 +421,7 @@ async function applyReleaseUpdate(root, localTag, latestRelease, options) {
     const actualDigest = sha256(archive);
     const expectedDigest = asset.digest.slice("sha256:".length).toLowerCase();
     if (actualDigest !== expectedDigest) {
-      throw new Error("Release ZIP SHA-256 does not match GitHub metadata.");
+      throw new Error("Release ZIP SHA-256 does not match the published manifest.");
     }
     const extractor = extractArchive(archive, extractRoot);
     const newSkillRoot = validateExtractedSkill(extractRoot, latestTag);
@@ -561,7 +607,8 @@ export async function main(argv = process.argv.slice(2)) {
 
 const isEntryPoint =
   process.argv[1] &&
-  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+  fs.realpathSync(path.resolve(process.argv[1])) ===
+    fs.realpathSync(fileURLToPath(import.meta.url));
 if (isEntryPoint) {
   process.exitCode = await main();
 }

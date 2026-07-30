@@ -10,6 +10,7 @@ import { fileURLToPath } from "node:url";
 import {
   compareStableTags,
   parseStableTag,
+  parsePublishedDigest,
 } from "../scripts/sync_skill_release.mjs";
 
 const repositoryRoot = path.resolve(
@@ -25,8 +26,13 @@ function writeJson(file, value) {
   fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`);
 }
 
-function runUpdater(arguments_, expectedStatus = 0, extraEnvironment = {}) {
-  const result = spawnSync(process.execPath, [updater, ...arguments_, "--json"], {
+function runUpdater(
+  arguments_,
+  expectedStatus = 0,
+  extraEnvironment = {},
+  executable = updater,
+) {
+  const result = spawnSync(process.execPath, [executable, ...arguments_, "--json"], {
     cwd: repositoryRoot,
     encoding: "utf8",
     env: { ...process.env, ...extraEnvironment },
@@ -107,12 +113,35 @@ try {
   assert.equal(compareStableTags("v2.0.0", "v1.99.99"), 1);
   assert.equal(compareStableTags("v1.3.0", "v1.3.0"), 0);
   assert.equal(compareStableTags("v1.2.9", "v1.3.0"), -1);
+  const publishedDigest = "a".repeat(64);
+  assert.equal(
+    parsePublishedDigest(
+      `<code>build-boutique-store-plan-sha256: ${publishedDigest}</code>`,
+    ),
+    publishedDigest,
+  );
+  assert.equal(parsePublishedDigest("<p>no release digest</p>"), null);
 
   const sameRelease = path.join(temporaryRoot, "same.json");
-  writeJson(sameRelease, releaseFixture("v1.3.0"));
+  writeJson(sameRelease, releaseFixture("v1.3.1"));
   const same = runUpdater(["--release-json", sameRelease]);
   assert.equal(same.status, "up_to_date");
   assert.equal(same.comparison, "same");
+
+  const updaterAliasRoot = path.join(temporaryRoot, "updater-alias");
+  fs.symlinkSync(repositoryRoot, updaterAliasRoot, "dir");
+  const aliasedUpdater = path.join(
+    updaterAliasRoot,
+    "scripts",
+    "sync_skill_release.mjs",
+  );
+  const aliased = runUpdater(
+    ["--release-json", sameRelease],
+    0,
+    {},
+    aliasedUpdater,
+  );
+  assert.equal(aliased.status, "up_to_date");
 
   const olderRelease = path.join(temporaryRoot, "older.json");
   writeJson(olderRelease, releaseFixture("v1.2.0"));
@@ -144,7 +173,7 @@ try {
   );
 
   assert.equal(
-    runUpdater(["--assert-tag", "v1.3.0"]).status,
+    runUpdater(["--assert-tag", "v1.3.1"]).status,
     "up_to_date",
   );
   runUpdater(["--assert-tag", "v9.9.9"], 1);
@@ -161,10 +190,10 @@ try {
   const applyRelease = path.join(temporaryRoot, "apply.json");
   writeJson(
     applyRelease,
-    releaseFixture("v1.3.0", {
+    releaseFixture("v1.3.1", {
       assets: [
         {
-          name: "build-boutique-store-plan-v1.3.0.zip",
+          name: "build-boutique-store-plan-v1.3.1.zip",
           browser_download_url: "https://example.invalid/release.zip",
           digest: `sha256:${digest}`,
         },
@@ -189,7 +218,7 @@ try {
     { BOUTIQUE_SKILL_UPDATE_TEST_MODE: "1" },
   );
   assert.equal(applied.status, "updated");
-  assert.equal(fs.readFileSync(path.join(installRoot, "VERSION"), "utf8").trim(), "v1.3.0");
+  assert.equal(fs.readFileSync(path.join(installRoot, "VERSION"), "utf8").trim(), "v1.3.1");
   assert.equal(fs.existsSync(path.join(installRoot, "old-marker.txt")), false);
   assert.equal(
     fs.readFileSync(path.join(applied.backup_path, "old-marker.txt"), "utf8").trim(),
@@ -201,10 +230,10 @@ try {
   const badDigestRelease = path.join(temporaryRoot, "bad-digest.json");
   writeJson(
     badDigestRelease,
-    releaseFixture("v1.3.0", {
+    releaseFixture("v1.3.1", {
       assets: [
         {
-          name: "build-boutique-store-plan-v1.3.0.zip",
+          name: "build-boutique-store-plan-v1.3.1.zip",
           browser_download_url: "https://example.invalid/release.zip",
           digest: `sha256:${"0".repeat(64)}`,
         },
