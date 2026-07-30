@@ -24,7 +24,7 @@ function validateReadme() {
     "给任意 AI 的安装提示词",
     "第一次使用",
     "不得假装安装成功",
-    "Amy 与 Mira 的浏览器授权",
+    "Aime 与 Mira 的浏览器授权",
     "不要选择云端浏览器授权",
     "完整报告必须实际查询营销参谋",
     "同一个 Excel 的两个 Sheet",
