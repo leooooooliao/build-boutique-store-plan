@@ -21,7 +21,7 @@ description: Turn one merchant or group’s complete multi-shop SKU portfolio in
 
 第一条回复必须先做浏览器预检：
 
-- Amy 用户：点击输入框下方【拓展】→ 开启【Aime Chrome】；“Aime Chrome”就是开关实际名称。
+- Aime 用户：点击输入框下方【拓展】→ 开启【Aime Chrome】；“Aime Chrome”就是开关实际名称。
 - Mira 或其他 AI：按当前宿主真实界面给出一个具体动作，开启可操作当前已登录浏览器的能力；不知道按钮名称时不要编造。
 - 使用本地已登录浏览器，不使用云端浏览器授权。
 
@@ -193,7 +193,7 @@ Top 3 主题确定后，读取 `references/gcrm-integration.md` 和 `references/
 - 表格、图片与可点击 URL 互相对应；
 - 一种克制的重点色和可快速扫描的卡片/提示块。
 
-允许 Amy、Mira 或其他宿主采用最自然的组件，不机械复刻 Sample。创建飞书文档后回读，核验标题、两个时间窗口、表格、图片和链接。
+允许 Aime、Mira 或其他宿主采用最自然的组件，不机械复刻 Sample。创建飞书文档后回读，核验标题、两个时间窗口、表格、图片和链接。
 
 ## 8. 报告 QA
 

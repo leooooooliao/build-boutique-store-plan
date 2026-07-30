@@ -36,7 +36,7 @@
 
 ## 给任意 AI 的安装提示词
 
-复制下面整段给 Amy、Mira 或其他 AI：
+复制下面整段给 Aime、Mira 或其他 AI：
 
 ```text
 请帮我下载、安装并启用“精品大店规划”Skill。
@@ -81,13 +81,13 @@ AI 的第一条回复应先完成浏览器预检，再提供两个拉数入口�
 
 表格不要截图，`Shop ID` 和 `Product ID` 必须保持文本。
 
-## Amy 与 Mira 的浏览器授权
+## Aime 与 Mira 的浏览器授权
 
-### Amy
+### Aime
 
 开始前，点击输入框下方【拓展】，开启截图中的 **Aime Chrome**；这就是开关的实际名称。使用当前已经登录营销参谋的本地浏览器，**不要选择云端浏览器授权**。
 
-![Amy 中开启 Aime Chrome](assets/amy-aime-chrome-permission.png)
+![Aime 中开启 Aime Chrome](assets/aime-chrome-permission.png)
 
 ### Mira 或其他 AI
 
