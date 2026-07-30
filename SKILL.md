@@ -139,22 +139,31 @@ node "<SKILL_ROOT>/scripts/validate_plan_evidence.mjs" \
 
 ## 5. 强制完成营销参谋
 
-Top 3 主题确定后，读取 `references/gcrm-integration.md` 和 `references/agent-compatibility.md`。
+Top 3 主题确定后，完整读取 `references/gcrm-integration.md`、`references/agent-compatibility.md` 和 `dependencies/gcrm-core/browser-runbook.md`。
 
 有 `$build-gcrm-hot-product-report` 时复用其提取和图片规则；没有时直接按本 Skill 的工具中立流程查询。安装另一个 Skill 不是浏览器授权，也不是跳过查询的理由。
 
 对每个主题：
 
 1. 使用该主题的国家、准确周期和最贴近的一级/二级类目。
-2. 实际打开营销参谋并核验页面筛选状态，等待加载完成。
-3. 先看 GMV Top 50；有效候选不足时再扩 Top 100 或飙升榜。
-4. 只补主题内真实缺口，不设数量配额。
-5. 保存 Product ID、原始标题、中文短名、原 Shop Name、类目、GMV/涨幅/渠道区间、商品图或截图、筛选页 URL 和含时区的采集时间。
-6. 把补品证据与对应图片、店铺和来源逐一绑定。
+2. 先运行：
+
+   ```bash
+   node "<SKILL_ROOT>/dependencies/gcrm-core/build-filter-plan.mjs" \
+     --country "<国家>" \
+     --category "<精确一级类目>"
+   ```
+
+   按输出的 direct URL、selector、浮层内自动滚动策略和完成检查操作。不要只找原生下拉框；`get_tabs` 成功后必须继续。
+3. 实际打开营销参谋并核验页面筛选状态，等待加载完成。
+4. 先看 GMV Top 50；有效候选不足时再扩 Top 100 或飙升榜。
+5. 只补主题内真实缺口，不设数量配额。
+6. 保存 Product ID、原始标题、中文短名、原 Shop Name、类目、GMV/涨幅/渠道区间、商品图或截图、筛选页 URL 和含时区的采集时间。
+7. 把补品证据与对应图片、店铺和来源逐一绑定。
 
 每个实际方案都必须至少有一次成功查询；在查询和补品证据中写入对应的 `theme_rank`、`theme_name`。不能用一个主题的营销参谋结果替另外两个主题过关。
 
-浏览器未授权或未登录时，只向用户提出一个当前动作，完成后重试。页面控件失败时依次尝试 DOM、键盘/视觉操作和同登录态页面请求；不得要求用户为每个国家、类目逐组手切。所有安全路径失败时写入 `partial`。
+浏览器未授权或未登录时，只向用户提出一个当前动作，完成后重试。页面控件失败时，先完整执行 `dependencies/gcrm-core/browser-runbook.md` 中的自定义 tree-select/cascader、DOM 自动滚动和浮层内视觉滚动协议，再尝试同登录态页面请求；不得要求用户为每个国家、类目逐组手切。所有安全路径失败时写入 `partial`。
 
 完整报告只接受由证据文件推导出的：
 

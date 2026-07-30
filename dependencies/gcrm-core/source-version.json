@@ -1,5 +1,5 @@
 {
-  "gcrm_core_version": "1.1.0",
+  "gcrm_core_version": "1.2.0",
   "created_at": "2026-07-29",
   "source_skill": {
     "name": "build-gcrm-hot-product-report",
@@ -15,9 +15,20 @@
   "included": [
     "country and level-1 category taxonomy",
     "authenticated local-browser state machine",
+    "deterministic country and category filter plan",
+    "custom tree-select and cascader selectors",
     "evidence schema and validator",
     "collection runbook"
   ],
+  "ui_automation": {
+    "verified_at": "2026-07-30",
+    "country_direct_url": true,
+    "country_tree_select": true,
+    "sea_parent_expansion": true,
+    "safe_category_trigger": true,
+    "category_cascader_checkbox": true,
+    "popup_scoped_auto_scroll": true
+  },
   "excluded": [
     "standalone GCRM Excel report builder",
     "standalone candidate workbook",

@@ -35,8 +35,15 @@ const QUERY_STATUSES = new Set([
 ]);
 const L2_STATUSES = new Set(["selected", "not_available", "not_supported"]);
 const CAPTURE_METHODS = new Set(["xhr", "dom", "export", "visible_table"]);
+const RECOVERY_REQUIRED_BROWSER_STATES = new Set([
+  "capability_blocked",
+  "filter_failed",
+  "unavailable",
+]);
 const PLACEHOLDER_PATTERN =
   /^(?:[-—–]|未知|待补|待定位|待查询|空|null|none|n\/?a|unavailable|placeholder)$/i;
+const FORBIDDEN_MANUAL_PATH_PATTERN =
+  /(?:user[_ -]?manual|manual[_ -]?(?:filter|select|handoff)|handoff|用户.*(?:手选|切换|切好|代选)|人工.*(?:筛选|切换|代选))/i;
 
 function parseArguments(argv) {
   const args = {};
@@ -389,6 +396,40 @@ export function validateGcrmEvidence(
   }
   if (browser.local_authenticated_session !== true) {
     errors.push("必须使用本地已登录浏览器；local_authenticated_session 必须为 true。");
+  }
+  if (browser.attempted_paths !== undefined) {
+    if (!Array.isArray(browser.attempted_paths)) {
+      errors.push("browser.attempted_paths 必须是数组。");
+    } else {
+      const validAttemptedPaths = browser.attempted_paths.filter(nonPlaceholder);
+      if (validAttemptedPaths.length !== browser.attempted_paths.length) {
+        errors.push("browser.attempted_paths 不能包含空值或占位值。");
+      }
+      if (
+        new Set(validAttemptedPaths.map((value) => String(value).toLowerCase()))
+          .size !== validAttemptedPaths.length
+      ) {
+        errors.push("browser.attempted_paths 不能重复。");
+      }
+      const manualPaths = validAttemptedPaths.filter((value) =>
+        FORBIDDEN_MANUAL_PATH_PATTERN.test(String(value)),
+      );
+      if (manualPaths.length > 0) {
+        errors.push(
+          `browser.attempted_paths 不能把逐组人工筛选或交接用户当作恢复路径：${manualPaths.join("、")}。`,
+        );
+      }
+    }
+  }
+  if (RECOVERY_REQUIRED_BROWSER_STATES.has(browser.state)) {
+    if (
+      !Array.isArray(browser.attempted_paths) ||
+      browser.attempted_paths.filter(nonPlaceholder).length < 2
+    ) {
+      errors.push(
+        `browser.state=${browser.state} 时必须记录至少 2 条自动恢复路径到 browser.attempted_paths，不能尝试一次就交给用户。`,
+      );
+    }
   }
 
   const queries = Array.isArray(evidence.queries) ? evidence.queries : [];
