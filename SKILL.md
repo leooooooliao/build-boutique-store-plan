@@ -12,9 +12,23 @@ description: Turn one merchant or group’s complete multi-shop SKU portfolio in
 1. **内部报表输出什么，就按什么分析。** 不纠正、不改写、不拿外部数据覆盖。
 2. **营销参谋是完整报告必经阶段。** 任意 AI 都必须实际提出并执行，不能静默跳过。
 
+## 0. 每次启用先同步版本
+
+先把包含本文件的目录解析为 `<SKILL_ROOT>`。每个新任务第一次触发本 Skill 时，必须完整读取 `references/self-update.md`，再运行：
+
+```bash
+node "<SKILL_ROOT>/scripts/sync_skill_release.mjs" --apply --json
+```
+
+- `up_to_date`：静默继续。
+- `updated`：简短说明已从旧版更新到新版，重新完整读取新版 `SKILL.md` 后继续；同一任务不再检查。
+- `check_unavailable` 或 `update_failed`：保留当前版并继续，不反复索权、不把业务分析卡住。
+
+没有 Node、目录只读或宿主只能临时读取文件时，严格采用 `references/self-update.md` 的等价路径。只接受固定官方仓库的稳定 Release 和完整 ZIP；不得比较 `dependencies/gcrm-core/source-version.json`，它不是本 Skill 版本。
+
 ## 1. 先完成首次交互
 
-先解析包含本文件的目录为 `<SKILL_ROOT>`，再完整读取：
+使用已解析的 `<SKILL_ROOT>`，再完整读取：
 
 - `references/interaction.md`
 - `references/data-contract.md`

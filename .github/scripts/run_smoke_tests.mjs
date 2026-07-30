@@ -33,10 +33,43 @@ function validateReadme() {
     "达人找不到清晰的合作主题",
     "固定入口（以后都用这两个）",
     "本 README 是唯一持续维护的使用说明",
+    "每次启用时都会先自动检查官方 GitHub Release",
+    "v1.2.0 或更早版本",
   ];
   const missing = requiredFragments.filter((fragment) => !readme.includes(fragment));
   if (missing.length > 0) {
     throw new Error(`README is missing required fragments: ${missing.join(", ")}`);
+  }
+}
+
+function validateSelfUpdateContract() {
+  const skill = fs.readFileSync(path.join(repositoryRoot, "SKILL.md"), "utf8");
+  const version = fs
+    .readFileSync(path.join(repositoryRoot, "VERSION"), "utf8")
+    .trim();
+  const updateHeading = skill.indexOf("## 0. 每次启用先同步版本");
+  const interactionHeading = skill.indexOf("## 1. 先完成首次交互");
+  if (
+    updateHeading < 0 ||
+    interactionHeading < 0 ||
+    updateHeading > interactionHeading
+  ) {
+    throw new Error("The self-update gate must precede the first interaction.");
+  }
+  for (const fragment of [
+    "scripts/sync_skill_release.mjs",
+    "--apply --json",
+    "每个新任务第一次触发",
+    "同一任务不再检查",
+    "references/self-update.md",
+    "不得比较 `dependencies/gcrm-core/source-version.json`",
+  ]) {
+    if (!skill.includes(fragment)) {
+      throw new Error(`SKILL.md is missing self-update contract: ${fragment}`);
+    }
+  }
+  if (!/^v(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)$/.test(version)) {
+    throw new Error(`VERSION is not a stable SemVer tag: ${version}`);
   }
 }
 
@@ -162,17 +195,20 @@ function validateGcrmFilterAutomation() {
 
 try {
   validateReadme();
+  validateSelfUpdateContract();
   validateGcrmFilterAutomation();
 
   for (const relativePath of [
     "scripts/lib.mjs",
     "scripts/validate_input.mjs",
     "scripts/prepare_portfolio.mjs",
+    "scripts/sync_skill_release.mjs",
     "scripts/validate_plan_evidence.mjs",
     "scripts/validate_report.mjs",
     "dependencies/gcrm-core/validate-evidence.mjs",
     "dependencies/gcrm-core/build-filter-plan.mjs",
     "tests/data_regression.mjs",
+    "tests/self_update.test.mjs",
     "tests/validate_report.test.mjs",
     ".github/scripts/validate_public_package.mjs",
     ".github/scripts/release_asset_downloads.mjs",
@@ -181,6 +217,7 @@ try {
   }
 
   runNode(["tests/data_regression.mjs"]);
+  runNode(["tests/self_update.test.mjs"]);
   runNode(["tests/validate_report.test.mjs"]);
 
   const commonInput = [
