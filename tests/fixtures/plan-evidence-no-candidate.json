@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0.0",
+  "schema_version": "1.1.0",
   "window": {
     "start": "2026-07-01",
     "end": "2026-07-26"
@@ -20,6 +20,7 @@
       "archetype_count": 4,
       "archetypes_already_in_target_shop": 1,
       "existing_archetype_share": 0.25,
+      "current_products": [{"product_id":"1731000000000000001","display_name":"厨房好品","source_shop_id":"7490000000000000011","source_shop_name":"Kitchen Source","gmv":320,"roas":4.8,"in_target_shop":false,"combination_note":"补齐高效烹饪场景"}],
       "classification": "reorganization",
       "priority_reason": "店外 GMV 占比高且来源分散，具备真实跨店集中价值",
       "ranking_override": null
@@ -39,6 +40,7 @@
       "archetype_count": 3,
       "archetypes_already_in_target_shop": 1,
       "existing_archetype_share": 0.333333,
+      "current_products": [{"product_id":"1731000000000000002","display_name":"车品好品","source_shop_id":"7490000000000000012","source_shop_name":"Auto Source","gmv":260,"roas":5.2,"in_target_shop":false,"combination_note":"补齐车内清洁场景"}],
       "classification": "reorganization",
       "priority_reason": "多数候选 GMV 位于承接店外，可形成第二个清晰重组主题",
       "ranking_override": null
@@ -58,6 +60,7 @@
       "archetype_count": 4,
       "archetypes_already_in_target_shop": 3,
       "existing_archetype_share": 0.75,
+      "current_products": [{"product_id":"1731000000000000003","display_name":"按摩好品","source_shop_id":"7490000000000000003","source_shop_name":"Recovery Home","gmv":300,"roas":null,"in_target_shop":true,"combination_note":"承接店内现有核心恢复品"}],
       "classification": "refinement",
       "priority_reason": "核心货盘多数已在承接店，价值主要来自聚焦去杂和统一内容",
       "ranking_override": null

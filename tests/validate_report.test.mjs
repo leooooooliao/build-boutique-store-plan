@@ -38,8 +38,8 @@ function evidenceArguments(file) {
     "dependencies/gcrm-core/validate-evidence.mjs",
     "--evidence",
     path.join(fixtures, file),
-    "--gcrm-window",
-    "2026-06-29..2026-07-28",
+    "--report-window",
+    "2026-07-01..2026-07-26",
     "--expected-themes",
     "3",
     "--json",
@@ -51,7 +51,7 @@ function planArguments(file) {
     "scripts/validate_plan_evidence.mjs",
     "--evidence",
     path.join(fixtures, file),
-    "--merchant-window",
+    "--report-window",
     "2026-07-01..2026-07-26",
     "--expected-plans",
     "3",
@@ -69,10 +69,8 @@ function reportArguments(
     "scripts/validate_report.mjs",
     "--report",
     path.join(fixtures, report),
-    "--merchant-window",
+    "--report-window",
     "2026-07-01..2026-07-26",
-    "--gcrm-window",
-    "2026-06-29..2026-07-28",
     "--generated-date",
     "2026-07-29",
     "--plan-evidence",
@@ -222,7 +220,7 @@ const oneAttemptEvidence = JSON.parse(
     "utf8",
   ),
 );
-oneAttemptEvidence.browser.attempted_paths = ["dom"];
+oneAttemptEvidence.browser.attempted_paths = ["dom_locator_auto_scroll"];
 const oneAttemptPath = path.join(
   temporaryDirectory,
   "gcrm-evidence-one-attempt.json",
@@ -237,7 +235,7 @@ const oneAttempt = run(
     "--evidence",
     oneAttemptPath,
     "--gcrm-window",
-    "2026-06-29..2026-07-28",
+    "2026-07-01..2026-07-26",
     "--expected-themes",
     "3",
     "--json",
@@ -253,7 +251,7 @@ const manualHandoffEvidence = JSON.parse(
   ),
 );
 manualHandoffEvidence.browser.attempted_paths = [
-  "dom",
+  "dom_locator_auto_scroll",
   "请用户切好后回复",
 ];
 const manualHandoffPath = path.join(
@@ -270,7 +268,7 @@ const manualHandoff = run(
     "--evidence",
     manualHandoffPath,
     "--gcrm-window",
-    "2026-06-29..2026-07-28",
+    "2026-07-01..2026-07-26",
     "--expected-themes",
     "3",
     "--json",
@@ -312,7 +310,7 @@ const missingTheme = run(
     "--evidence",
     missingThemePath,
     "--gcrm-window",
-    "2026-06-29..2026-07-28",
+    "2026-07-01..2026-07-26",
     "--expected-themes",
     "3",
     "--json",
@@ -346,7 +344,7 @@ const inconsistentTheme = run(
     "--evidence",
     inconsistentThemePath,
     "--gcrm-window",
-    "2026-06-29..2026-07-28",
+    "2026-07-01..2026-07-26",
     "--expected-themes",
     "3",
     "--json",
@@ -379,7 +377,7 @@ const missingNoCandidateReason = run(
     "--evidence",
     missingNoCandidateReasonPath,
     "--gcrm-window",
-    "2026-06-29..2026-07-28",
+    "2026-07-01..2026-07-26",
     "--expected-themes",
     "3",
     "--json",
@@ -409,7 +407,7 @@ const missingShop = run(
     "--evidence",
     missingShopPath,
     "--gcrm-window",
-    "2026-06-29..2026-07-28",
+    "2026-07-01..2026-07-26",
     "--expected-themes",
     "3",
     "--json",
@@ -427,6 +425,48 @@ const goodReport = run(
   0,
 );
 assert.equal(JSON.parse(goodReport.stdout).delivery_status, "complete");
+
+function runReportMutation(name, mutate, expectedPattern) {
+  const source = fs.readFileSync(path.join(fixtures, "report-good.md"), "utf8");
+  const target = path.join(temporaryDirectory, name);
+  fs.writeFileSync(target, mutate(source));
+  const arguments_ = reportArguments(
+    "report-good.md",
+    "gcrm-evidence-verified.json",
+    3,
+  );
+  arguments_[2] = target;
+  const result = run(arguments_, 1);
+  assert.match(result.stdout, expectedPattern);
+}
+
+runReportMutation(
+  "report-missing-purpose.md",
+  (source) =>
+    source.replace(
+      "该店完成现有好品集中后，还可以补充同主题商品。以下候选来自营销参谋对应国家、类目和报告周期内的大盘表现，作为后续开品方向，不代表必须上架。",
+      "补品建议如下。",
+    ),
+  /补品用途说明不完整/,
+);
+
+runReportMutation(
+  "report-missing-tr.md",
+  (source) => source.replace("｜TR（估）：10.0%", ""),
+  /TR（估）未在对应方案中按百分比展示/,
+);
+
+runReportMutation(
+  "report-missing-current-product.md",
+  (source) => source.replace("1731000000000000001", "1731999999999999999"),
+  /现有好品.*Product ID未在本方案中展示/,
+);
+
+runReportMutation(
+  "report-ai-not-last.md",
+  (source) => `${source}\n\n## 其他结论\n\n不应出现在 AI 延伸建议之后。\n`,
+  /AI 延伸建议必须是报告最后一个一级\/二级章节/,
+);
 
 const misleadingPlanReport = fs
   .readFileSync(path.join(fixtures, "report-good.md"), "utf8")
@@ -450,8 +490,8 @@ assert.match(
 
 const swappedThemeReport = fs
   .readFileSync(path.join(fixtures, "report-good.md"), "utf8")
-  .replace("精品店 1｜高效厨房店", "精品店 1｜车主清洁与应急店")
-  .replace("精品店 2｜车主清洁与应急店", "精品店 2｜高效厨房店");
+  .replace("方案 1｜高效厨房店", "方案 1｜车主清洁与应急店")
+  .replace("方案 2｜车主清洁与应急店", "方案 2｜高效厨房店");
 const swappedThemeReportPath = path.join(
   temporaryDirectory,
   "report-swapped-theme.md",
@@ -511,7 +551,7 @@ run(
     "--merchant-window",
     "2026-07-01..2026-07-26",
     "--gcrm-window",
-    "2026-06-29..2026-07-28",
+    "2026-07-01..2026-07-26",
     "--generated-date",
     "2026-07-29",
     "--gcrm-mode",

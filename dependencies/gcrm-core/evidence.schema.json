@@ -6,7 +6,7 @@
   "required": ["schema_version", "source", "browser", "queries", "candidates"],
   "properties": {
     "schema_version": {
-      "const": "1.0.0"
+      "const": "1.1.0"
     },
     "source": {
       "type": "object",
@@ -20,7 +20,13 @@
     },
     "browser": {
       "type": "object",
-      "required": ["state", "adapter", "local_authenticated_session"],
+      "required": [
+        "state",
+        "adapter",
+        "adapter_type",
+        "session_mode",
+        "local_authenticated_session"
+      ],
       "properties": {
         "state": {
           "enum": [
@@ -39,13 +45,42 @@
           ]
         },
         "adapter": { "type": "string", "minLength": 1 },
+        "adapter_type": { "enum": ["aime_chrome", "other_local"] },
+        "session_mode": { "const": "local_authenticated_browser" },
         "local_authenticated_session": { "type": "boolean" },
         "attempted_paths": {
           "type": "array",
-          "items": { "type": "string", "minLength": 1 },
+          "items": {
+            "enum": [
+              "direct_url_then_verify",
+              "tree_select_expand_sea_if_needed",
+              "dom_locator_auto_scroll",
+              "level_two_dom_locator_auto_scroll",
+              "popup_scoped_visual_scroll",
+              "same_authenticated_session_xhr_or_api",
+              "page_export",
+              "visible_table_read"
+            ]
+          },
           "uniqueItems": true
         }
       },
+      "allOf": [
+        {
+          "if": {
+            "required": ["state"],
+            "properties": {
+              "state": {
+                "enum": ["evidence_collected", "evidence_validated"]
+              }
+            }
+          },
+          "then": {
+            "required": ["attempted_paths"],
+            "properties": { "attempted_paths": { "minItems": 1 } }
+          }
+        }
+      ],
       "additionalProperties": true
     },
     "queries": {
@@ -63,6 +98,7 @@
           "captured_at",
           "result_status",
           "row_count",
+          "l2_attempted",
           "proof"
         ],
         "properties": {
@@ -97,6 +133,8 @@
             "enum": ["success", "auth_required", "capability_blocked", "filter_failed", "unavailable"]
           },
           "row_count": { "type": "integer", "minimum": 0 },
+          "l2_attempted": { "type": "boolean" },
+          "l2_status_reason": { "type": "string", "minLength": 1 },
           "proof": {
             "type": "object",
             "required": ["capture_method"],
@@ -117,6 +155,24 @@
           },
           "no_candidate_reason": { "type": "string", "minLength": 1 }
         },
+        "allOf": [
+          {
+            "if": {
+              "required": ["category"],
+              "properties": {
+                "category": {
+                  "properties": {
+                    "l2_status": {
+                      "enum": ["not_available", "not_supported"]
+                    }
+                  },
+                  "required": ["l2_status"]
+                }
+              }
+            },
+            "then": { "required": ["l2_status_reason"] }
+          }
+        ],
         "additionalProperties": true
       }
     },
@@ -136,6 +192,9 @@
           "category",
           "window",
           "gmv_range",
+          "average_price",
+          "ads_cost_range",
+          "tr_estimate",
           "growth_range",
           "channel_ranges",
           "filter_url",
@@ -153,6 +212,15 @@
           "category": { "$ref": "#/$defs/category" },
           "window": { "$ref": "#/$defs/window" },
           "gmv_range": { "type": "string", "minLength": 1 },
+          "average_price": {
+            "oneOf": [
+              { "type": "number", "minimum": 0 },
+              { "type": "string", "minLength": 1, "pattern": "[0-9]" }
+            ]
+          },
+          "ads_cost_range": { "type": "string", "minLength": 1 },
+          "tr_estimate": { "type": ["number", "null"], "minimum": 0 },
+          "tr_unavailable_reason": { "type": "string", "minLength": 1 },
           "growth_range": { "type": "string", "minLength": 1 },
           "channel_ranges": {
             "type": "object",
@@ -168,7 +236,16 @@
           { "required": ["image_url"] },
           { "required": ["screenshot_ref"] }
         ],
-        "additionalProperties": true
+        "allOf": [
+          {
+            "if": {
+              "required": ["tr_estimate"],
+              "properties": { "tr_estimate": { "type": "null" } }
+            },
+            "then": { "required": ["tr_unavailable_reason"] }
+          }
+        ],
+        "additionalProperties": false
       }
     }
   },

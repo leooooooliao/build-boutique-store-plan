@@ -159,10 +159,8 @@ function run(arguments_, expectedStatus = 0) {
 }
 
 const windows = [
-  "--merchant-window",
+  "--report-window",
   "2026-07-01..2026-07-26",
-  "--gcrm-window",
-  "2026-06-29..2026-07-28",
 ];
 
 try {
@@ -202,13 +200,24 @@ try {
     ]).stdout,
   );
   assert.equal(validated.analysis_ready, true);
+  assert.deepEqual(validated.periods, {
+    report: {
+      start: "2026-07-01",
+      end: "2026-07-26",
+      display: "2026-07-01 至 2026-07-26",
+    },
+  });
   assert.deepEqual(validated.inputs.sheets, {
     id: "原始指标",
     names: "辅助名称",
   });
-  assert.equal(validated.inputs.analysis_rows, 2);
-  assert.equal(validated.inputs.isolated_id_rows, 2);
+  assert.equal(validated.inputs.analysis_rows, 3);
+  assert.equal(validated.inputs.isolated_id_rows, 1);
+  assert.deepEqual(validated.inputs.countries, ["MY", "UNKNOWN"]);
   assert.ok(validated.auto_handled.some((message) => message.includes("空国家")));
+  assert.ok(
+    validated.auto_handled.some((message) => message.includes("保留为 UNKNOWN")),
+  );
   assert.ok(validated.auto_handled.some((message) => message.includes("L3 为空")));
   assert.ok(validated.notices.some((message) => message.includes("Excel ID")));
 
@@ -226,13 +235,79 @@ try {
   ]);
   const audit = JSON.parse(fs.readFileSync(auditPath, "utf8"));
   const compact = JSON.parse(fs.readFileSync(compactPath, "utf8"));
-  assert.equal(audit.product_rows.length, 2);
+  assert.equal(audit.product_rows.length, 3);
   assert.equal(audit.product_rows[0].metrics.ad_cost, null);
   assert.equal(audit.product_rows[0].metrics.roas, null);
   assert.equal(audit.shop_summary[0].metrics.gmv, 150);
   assert.equal(audit.shop_summary[0].metrics.roas, 5);
   assert.equal(audit.shop_summary[0].metric_coverage.roas_row_rate, 0.5);
   assert.equal(compact.analysis_pool.countries[0].top_100.length, 2);
+  assert.deepEqual(Object.keys(audit.periods), ["report"]);
+
+  const legacyCompatible = JSON.parse(
+    run([
+      "scripts/validate_input.mjs",
+      "--workbook",
+      workbookPath,
+      "--merchant-window",
+      "2026-07-01..2026-07-26",
+      "--gcrm-window",
+      "2026-07-01..2026-07-26",
+      "--json",
+    ]).stdout,
+  );
+  assert.equal(legacyCompatible.analysis_ready, true);
+  assert.equal(legacyCompatible.periods.report.start, "2026-07-01");
+
+  const conflictingLegacyWindows = JSON.parse(
+    run([
+      "scripts/validate_input.mjs",
+      "--workbook",
+      workbookPath,
+      "--merchant-window",
+      "2026-07-01..2026-07-26",
+      "--gcrm-window",
+      "2026-06-29..2026-07-28",
+      "--json",
+    ], 1).stdout,
+  );
+  assert.equal(conflictingLegacyWindows.analysis_ready, false);
+  assert.ok(
+    conflictingLegacyWindows.hard_blockers.some((message) =>
+      message.includes("全文只支持一个报告周期"),
+    ),
+  );
+
+  const allCountriesUnknownPath = path.join(
+    temporaryDirectory,
+    "all-countries-unknown.xlsx",
+  );
+  writeWorkbook(
+    allCountriesUnknownPath,
+    [
+      ["product_id", "shop_id", "payment_1d"],
+      ["1736000000000000001", "7495000000000000001", { number: 80 }],
+      ["1736000000000000002", "7495000000000000002", { number: 20 }],
+    ],
+    [
+      ["product_id", "product_name", "shop_name", "shop_id"],
+      ["1736000000000000001", "清洁刷", "Unknown Store A", "7495000000000000001"],
+      ["1736000000000000002", "清洁布", "Unknown Store B", "7495000000000000002"],
+    ],
+  );
+  const allCountriesUnknown = JSON.parse(
+    run([
+      "scripts/validate_input.mjs",
+      "--workbook",
+      allCountriesUnknownPath,
+      ...windows,
+      "--json",
+    ]).stdout,
+  );
+  assert.equal(allCountriesUnknown.analysis_ready, true);
+  assert.equal(allCountriesUnknown.inputs.analysis_rows, 2);
+  assert.equal(allCountriesUnknown.inputs.isolated_id_rows, 0);
+  assert.deepEqual(allCountriesUnknown.inputs.countries, ["UNKNOWN"]);
 
   const tolerantAuditPath = path.join(temporaryDirectory, "tolerant-audit.json");
   run([
@@ -246,7 +321,11 @@ try {
     tolerantAuditPath,
   ]);
   const tolerantAudit = JSON.parse(fs.readFileSync(tolerantAuditPath, "utf8"));
-  assert.equal(tolerantAudit.audit.analysis_ready_id_rows, 3);
+  assert.equal(tolerantAudit.audit.analysis_ready_id_rows, 4);
+  const unknownCountry = tolerantAudit.country_summary.find(
+    (country) => country.shop_operation_country === "UNKNOWN",
+  );
+  assert.equal(unknownCountry.metrics.gmv, 30);
   const crossShopProduct =
     tolerantAudit.analysis_pool.countries[0].top_100.find(
       (row) => row.product_id === "1736361530895796079",

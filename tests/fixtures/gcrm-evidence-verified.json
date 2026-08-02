@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0.0",
+  "schema_version": "1.1.0",
   "source": {
     "system": "GCRM Marketing Advisor",
     "page_url": "https://mmm.tiktok-row.net/gcrm_overseas/phoenix/marketing-advisor/product-insights/top-product",
@@ -8,8 +8,14 @@
   "browser": {
     "state": "evidence_collected",
     "adapter": "Aime Chrome",
+    "adapter_type": "aime_chrome",
+    "session_mode": "local_authenticated_browser",
     "local_authenticated_session": true,
-    "attempted_paths": ["dom"]
+    "attempted_paths": [
+      "direct_url_then_verify",
+      "dom_locator_auto_scroll",
+      "level_two_dom_locator_auto_scroll"
+    ]
   },
   "queries": [
     {
@@ -23,13 +29,14 @@
         "l2_status": "selected"
       },
       "window": {
-        "start": "2026-06-29",
-        "end": "2026-07-28"
+        "start": "2026-07-01",
+        "end": "2026-07-26"
       },
       "filter_url": "https://mmm.tiktok-row.net/gcrm_overseas/phoenix/marketing-advisor/product-insights/top-product?country=MY&category=kitchen",
       "captured_at": "2026-07-29T15:30:00+08:00",
       "result_status": "success",
       "row_count": 50,
+      "l2_attempted": true,
       "proof": {
         "capture_method": "dom",
         "screenshot_ref": "gcrm-my-kitchen-202607.png"
@@ -46,13 +53,14 @@
         "l2_status": "selected"
       },
       "window": {
-        "start": "2026-06-29",
-        "end": "2026-07-28"
+        "start": "2026-07-01",
+        "end": "2026-07-26"
       },
       "filter_url": "https://mmm.tiktok-row.net/gcrm_overseas/phoenix/marketing-advisor/product-insights/top-product?country=MY&category=auto",
       "captured_at": "2026-07-29T15:36:00+08:00",
       "result_status": "success",
       "row_count": 50,
+      "l2_attempted": true,
       "proof": {
         "capture_method": "dom",
         "screenshot_ref": "gcrm-my-auto-202607.png"
@@ -69,13 +77,15 @@
         "l2_status": "not_available"
       },
       "window": {
-        "start": "2026-06-29",
-        "end": "2026-07-28"
+        "start": "2026-07-01",
+        "end": "2026-07-26"
       },
       "filter_url": "https://mmm.tiktok-row.net/gcrm_overseas/phoenix/marketing-advisor/product-insights/top-product?country=MY&category=care",
       "captured_at": "2026-07-29T15:42:00+08:00",
       "result_status": "success",
       "row_count": 50,
+      "l2_attempted": true,
+      "l2_status_reason": "展开保健一级类目后，第二列未显示可用二级选项",
       "proof": {
         "capture_method": "dom",
         "screenshot_ref": "gcrm-my-care-202607.png"
@@ -98,10 +108,13 @@
         "l2_status": "selected"
       },
       "window": {
-        "start": "2026-06-29",
-        "end": "2026-07-28"
+        "start": "2026-07-01",
+        "end": "2026-07-26"
       },
       "gmv_range": "USD 10K–20K",
+      "average_price": "USD 6.5",
+      "ads_cost_range": "USD 1K–2K",
+      "tr_estimate": 0.1,
       "growth_range": "+20%–30%",
       "channel_ranges": {
         "LIVE": "USD 4K–8K",
@@ -126,10 +139,13 @@
         "l2_status": "selected"
       },
       "window": {
-        "start": "2026-06-29",
-        "end": "2026-07-28"
+        "start": "2026-07-01",
+        "end": "2026-07-26"
       },
       "gmv_range": "USD 8K–12K",
+      "average_price": 12,
+      "ads_cost_range": "USD 800–1K",
+      "tr_estimate": 0.09,
       "growth_range": "+10%–15%",
       "channel_ranges": {
         "LIVE": "USD 2K–4K",
@@ -154,10 +170,13 @@
         "l2_status": "not_available"
       },
       "window": {
-        "start": "2026-06-29",
-        "end": "2026-07-28"
+        "start": "2026-07-01",
+        "end": "2026-07-26"
       },
       "gmv_range": "USD 7K–10K",
+      "average_price": "USD 18.5",
+      "ads_cost_range": "USD 400–600",
+      "tr_estimate": 0.0588235294,
       "growth_range": "暂无可靠涨幅",
       "channel_ranges": {
         "LIVE": "USD 3K–5K",

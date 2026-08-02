@@ -105,7 +105,9 @@ function validateGcrmFilterAutomation() {
     "浮层内部",
     "浮层展开后再做一次新的完整 `snapshot`",
     "不要继续使用展开前的旧 ref",
-    "aime-browser click --tab_id=<TAB_ID> --selector='<TARGET_CHECKBOX_SELECTOR>'",
+    "aime-browser click --tab_id=<TAB_ID> --selector='<L1_TARGET_CHECKBOX_SELECTOR>'",
+    "### Level 2 Category",
+    "level_two_selection.target_checkbox_selector",
     "不得因“滚轮滑不动”让用户手选",
   ]) {
     if (!runbook.includes(fragment)) {
@@ -147,6 +149,34 @@ function validateGcrmFilterAutomation() {
   ) {
     throw new Error(
       "GCRM filter plan must use the safe category trigger and visible L1 popup.",
+    );
+  }
+
+  const levelTwoResult = runNodeCapture([
+    "dependencies/gcrm-core/build-filter-plan.mjs",
+    "--country",
+    "MY",
+    "--category",
+    "美妆个护",
+    "--l2",
+    "美容、个护电器",
+  ]);
+  const levelTwoPlan = JSON.parse(levelTwoResult.stdout);
+  if (
+    levelTwoPlan.schema_version !== "1.3.0" ||
+    levelTwoPlan.level_two_selection.requested !== true ||
+    !levelTwoPlan.level_two_selection.level_two_menu_selector.includes(
+      "nth-of-type(2)",
+    ) ||
+    !levelTwoPlan.level_two_selection.target_checkbox_selector.includes(
+      '[title="美容、个护电器"]',
+    ) ||
+    !levelTwoPlan.level_two_selection.readback_strategy.includes(
+      "aria-checked=true",
+    )
+  ) {
+    throw new Error(
+      "GCRM filter plan is missing deterministic level-2 selectors and readback.",
     );
   }
   if (
@@ -208,6 +238,7 @@ try {
     "dependencies/gcrm-core/validate-evidence.mjs",
     "dependencies/gcrm-core/build-filter-plan.mjs",
     "tests/data_regression.mjs",
+    "tests/gcrm_metrics.test.mjs",
     "tests/self_update.test.mjs",
     "tests/validate_report.test.mjs",
     ".github/scripts/validate_public_package.mjs",
@@ -217,6 +248,7 @@ try {
   }
 
   runNode(["tests/data_regression.mjs"]);
+  runNode(["tests/gcrm_metrics.test.mjs"]);
   runNode(["tests/self_update.test.mjs"]);
   runNode(["tests/validate_report.test.mjs"]);
 
@@ -232,7 +264,7 @@ try {
     "--merchant-window",
     "2026-07-01..2026-07-26",
     "--gcrm-window",
-    "2026-06-29..2026-07-28",
+    "2026-07-01..2026-07-26",
   ];
 
   runNode(["scripts/validate_input.mjs", ...commonInput, "--json"]);

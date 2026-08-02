@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0.0",
+  "schema_version": "1.1.0",
   "source": {
     "system": "GCRM Marketing Advisor",
     "page_url": "https://mmm.tiktok-row.net/gcrm_overseas/phoenix/marketing-advisor/product-insights/top-product",
@@ -8,8 +8,14 @@
   "browser": {
     "state": "capability_blocked",
     "adapter": "Aime Chrome",
+    "adapter_type": "aime_chrome",
+    "session_mode": "local_authenticated_browser",
     "local_authenticated_session": true,
-    "attempted_paths": ["dom", "xhr", "visible_table"]
+    "attempted_paths": [
+      "dom_locator_auto_scroll",
+      "popup_scoped_visual_scroll",
+      "same_authenticated_session_xhr_or_api"
+    ]
   },
   "queries": [
     {
@@ -23,13 +29,15 @@
         "l2_status": "not_supported"
       },
       "window": {
-        "start": "2026-06-29",
-        "end": "2026-07-28"
+        "start": "2026-07-01",
+        "end": "2026-07-26"
       },
       "filter_url": "https://mmm.tiktok-row.net/gcrm_overseas/phoenix/marketing-advisor/product-insights/top-product?country=MY&category=kitchen",
       "captured_at": "2026-07-29T16:20:00+08:00",
       "result_status": "capability_blocked",
       "row_count": 0,
+      "l2_attempted": true,
+      "l2_status_reason": "已尝试展开第二列，但浏览器控件能力阻断，无法确认可选项",
       "proof": {
         "capture_method": "visible_table",
         "screenshot_ref": "gcrm-my-kitchen-blocked-202607.png"

@@ -7,6 +7,7 @@ import {
   parseWindow,
   printResult,
   requireOptions,
+  resolveReportWindowArgs,
 } from "./lib.mjs";
 
 const CLASSIFICATIONS = new Set(["reorganization", "refinement"]);
@@ -23,7 +24,7 @@ const HELP = `
 用法：
   node scripts/validate_plan_evidence.mjs \\
     --evidence <plan-evidence.json> \\
-    --merchant-window 2026-07-01..2026-07-26 \\
+    --report-window 2026-07-01..2026-07-26 \\
     [--expected-plans 3] [--json]
 
 固定判定：
@@ -139,6 +140,43 @@ function validatePlanFields(plan, index, errors) {
   }
   if (!integerInRange(plan?.archetype_count, 1)) {
     errors.push(`${label}.archetype_count 必须是大于等于 1 的整数。`);
+  }
+  if (!Array.isArray(plan?.current_products) || plan.current_products.length === 0) {
+    errors.push(`${label}.current_products 必须至少包含一个现有好品。`);
+  } else {
+    const seenProductKeys = new Set();
+    for (const [productIndex, product] of plan.current_products.entries()) {
+      const productLabel = `${label}.current_products[${productIndex}]`;
+      for (const field of [
+        "product_id",
+        "display_name",
+        "source_shop_id",
+        "source_shop_name",
+        "combination_note",
+      ]) {
+        if (!nonEmpty(product?.[field])) {
+          errors.push(`${productLabel}.${field} 不能为空。`);
+        }
+      }
+      if (!finiteNonNegative(product?.gmv)) {
+        errors.push(`${productLabel}.gmv 必须是非负有限数字。`);
+      }
+      if (
+        product?.roas !== null &&
+        product?.roas !== undefined &&
+        !finiteNonNegative(product.roas)
+      ) {
+        errors.push(`${productLabel}.roas 必须是非负有限数字或 null。`);
+      }
+      if (typeof product?.in_target_shop !== "boolean") {
+        errors.push(`${productLabel}.in_target_shop 必须是布尔值。`);
+      }
+      const key = `${String(product?.source_shop_id ?? "")}\u001f${String(product?.product_id ?? "")}`;
+      if (seenProductKeys.has(key)) {
+        errors.push(`${productLabel} 与同方案内其他现有好品重复。`);
+      }
+      seenProductKeys.add(key);
+    }
   }
   if (
     !integerInRange(
@@ -308,7 +346,7 @@ function validateOverride(plan, lowerReorganizationRanks, errors, warnings) {
 
 export function validatePlanEvidence(
   evidence,
-  merchantWindow,
+  reportWindow,
   options = {},
 ) {
   const errors = [];
@@ -323,15 +361,15 @@ export function validatePlanEvidence(
       checks: {},
     };
   }
-  if (evidence.schema_version !== "1.0.0") {
-    errors.push("schema_version 必须是 1.0.0。");
+  if (evidence.schema_version !== "1.1.0") {
+    errors.push("schema_version 必须是 1.1.0。");
   }
   if (
-    evidence.window?.start !== merchantWindow.start ||
-    evidence.window?.end !== merchantWindow.end
+    evidence.window?.start !== reportWindow.start ||
+    evidence.window?.end !== reportWindow.end
   ) {
     errors.push(
-      `方案证据周期必须等于客户货盘周期 ${merchantWindow.start} 至 ${merchantWindow.end}。`,
+      `方案证据周期必须等于报告周期 ${reportWindow.start} 至 ${reportWindow.end}。`,
     );
   }
   if (!Array.isArray(evidence.plans) || evidence.plans.length === 0) {
@@ -424,7 +462,8 @@ if (isMain) {
     process.exit(0);
   }
   try {
-    requireOptions(args, ["evidence", "merchant-window"]);
+    requireOptions(args, ["evidence"]);
+    const reportWindowRaw = resolveReportWindowArgs(args);
     const expectedPlans =
       args["expected-plans"] === undefined
         ? null
@@ -435,12 +474,9 @@ if (isMain) {
     ) {
       throw new Error("--expected-plans 必须是 1–10 的整数。");
     }
-    const merchantWindow = parseWindow(
-      args["merchant-window"],
-      "客户货盘周期",
-    );
+    const reportWindow = parseWindow(reportWindowRaw, "报告周期");
     const evidence = readJson(args.evidence);
-    const result = validatePlanEvidence(evidence, merchantWindow, {
+    const result = validatePlanEvidence(evidence, reportWindow, {
       expectedPlans,
     });
     printResult(result, Boolean(args.json));

@@ -1,8 +1,14 @@
 # 跑品商家精品大店建议
 
-全文数据窗口｜客户货盘：2026-07-01 至 2026-07-26；营销参谋：2026-06-29 至 2026-07-28；生成日：2026-07-29。
+全文报告周期：2026-07-01 至 2026-07-26｜生成日：2026-07-29｜识别国家：MY。
 
-## Top 3 精品店
+ID 层级数据是经营事实源；名称对照只解释商品与店铺；营销参谋只验证补品。
+
+## 核心结论
+
+先把本报告建议的现有好品集中到对应承接店，再围绕店铺主题定向寻找达人，并按后文补品建议逐步补入同主题商品，持续去杂，把杂货型店铺收敛为相对垂直的精品店。
+
+## Top 3 精品店主题一览
 
 | 优先级 | 主题 | 承接店 | 类型 | 候选核心 GMV | 店外占比 | 来源店铺数 | 排序理由 |
 |---:|---|---|---|---:|---:|---:|---|
@@ -10,46 +16,92 @@
 | 2 | 车主清洁与应急店 | Auto Ready（7490000000000000002） | 重组型 | 800 | 60% | 2 | 多数候选 GMV 位于承接店外，可形成第二个清晰重组主题 |
 | 3 | 居家按摩与恢复店 | Recovery Home（7490000000000000003） | 精修型 | 700 | 30% | 2 | 核心货盘多数已在承接店，价值主要来自聚焦去杂和统一内容 |
 
-### 精品店 1｜高效厨房店
+### 方案 1｜高效厨房店
 
 承接店：Kitchen Hub；Shop ID：7490000000000000001。
 
 方案证据：重组型；候选核心 GMV：1000；承接店内已有 GMV 占比：20%；店外候选 GMV 占比：80%；来源店铺数：3。排序理由：店外 GMV 占比高且来源分散，具备真实跨店集中价值。
 
-| Product ID | 原始标题 | 简洁中文名 | 营销参谋原 Shop Name | 国家与类目 | GMV | 涨幅 | 渠道区间 | 采集时间 |
-|---|---|---|---|---|---|---|---|---|
-| 1730000000000000001 | Multi-function Electric Spin Scrubber | 多功能电动清洁刷 | Kitchen Star | MY｜厨房用品｜厨房清洁用品 | USD 10K–20K | +20%–30% | LIVE：USD 4K–8K；VIDEO：USD 5K–10K | 2026-07-29T15:30:00+08:00 |
+#### 现有好品组合
 
-筛选 URL：https://mmm.tiktok-row.net/gcrm_overseas/phoenix/marketing-advisor/product-insights/top-product?country=MY&category=kitchen
+| Product ID | 显示名 | 来源店铺（Shop ID） | GMV | ROAS | 组合判断 |
+|---|---|---|---:|---:|---|
+| 1731000000000000001 | 多功能料理锅 | Kitchen Source（7490000000000000011） | 320 | 4.8 | 补齐高效烹饪场景 |
+
+#### 营销参谋补品
+
+该店完成现有好品集中后，还可以补充同主题商品。以下候选来自营销参谋对应国家、类目和报告周期内的大盘表现，作为后续开品方向，不代表必须上架。
+
+**多功能电动清洁刷｜Multi-function Electric Spin Scrubber**
 
 ![多功能电动清洁刷](https://example.com/kitchen.png)
 
-### 精品店 2｜车主清洁与应急店
+Product ID：1730000000000000001｜营销参谋原 Shop Name：Kitchen Star｜MY｜厨房用品 / 厨房清洁用品｜2026-07-01 至 2026-07-26。总 GMV：USD 10K–20K｜涨幅：+20%–30%｜平均客单价：USD 6.5｜广告消耗：USD 1K–2K｜TR（估）：10.0%｜LIVE：USD 4K–8K｜VIDEO：USD 5K–10K。用于补充厨房清洁环节，仍需商家评估供应链与履约。
+
+筛选 URL：https://mmm.tiktok-row.net/gcrm_overseas/phoenix/marketing-advisor/product-insights/top-product?country=MY&category=kitchen｜采集时间：2026-07-29T15:30:00+08:00。
+
+### 方案 2｜车主清洁与应急店
 
 承接店：Auto Ready；Shop ID：7490000000000000002。
 
 方案证据：重组型；候选核心 GMV：800；承接店内已有 GMV 占比：40%；店外候选 GMV 占比：60%；来源店铺数：2。排序理由：多数候选 GMV 位于承接店外，可形成第二个清晰重组主题。
 
-| Product ID | 原始标题 | 简洁中文名 | 营销参谋原 Shop Name | 国家与类目 | GMV | 涨幅 | 渠道区间 | 采集时间 |
-|---|---|---|---|---|---|---|---|---|
-| 1730000000000000002 | Portable Car Vacuum Cleaner | 便携车载吸尘器 | Car Tool Mall | MY｜汽车与摩托车｜汽车清洁 | USD 8K–12K | +10%–15% | LIVE：USD 2K–4K；VIDEO：USD 5K–7K | 2026-07-29T15:36:00+08:00 |
+#### 现有好品组合
 
-筛选 URL：https://mmm.tiktok-row.net/gcrm_overseas/phoenix/marketing-advisor/product-insights/top-product?country=MY&category=auto
+| Product ID | 显示名 | 来源店铺（Shop ID） | GMV | ROAS | 组合判断 |
+|---|---|---|---:|---:|---|
+| 1731000000000000002 | 汽车清洁喷剂 | Auto Source（7490000000000000012） | 260 | 5.2 | 补齐车内清洁场景 |
+
+#### 营销参谋补品
+
+该店完成现有好品集中后，还可以补充同主题商品。以下候选来自营销参谋对应国家、类目和报告周期内的大盘表现，作为后续开品方向，不代表必须上架。
+
+**便携车载吸尘器｜Portable Car Vacuum Cleaner**
 
 ![便携车载吸尘器](https://example.com/car.png)
 
-### 精品店 3｜居家按摩与恢复店
+Product ID：1730000000000000002｜营销参谋原 Shop Name：Car Tool Mall｜MY｜汽车与摩托车 / 汽车清洁｜2026-07-01 至 2026-07-26。总 GMV：USD 8K–12K｜涨幅：+10%–15%｜平均客单价：12｜广告消耗：USD 800–1K｜TR（估）：9.0%｜LIVE：USD 2K–4K｜VIDEO：USD 5K–7K。用于补充车内清洁工具，仍需商家评估供应链与履约。
+
+筛选 URL：https://mmm.tiktok-row.net/gcrm_overseas/phoenix/marketing-advisor/product-insights/top-product?country=MY&category=auto｜采集时间：2026-07-29T15:36:00+08:00。
+
+### 方案 3｜居家按摩与恢复店
 
 承接店：Recovery Home；Shop ID：7490000000000000003。
 
 方案证据：精修型；候选核心 GMV：700；承接店内已有 GMV 占比：70%；店外候选 GMV 占比：30%；来源店铺数：2。排序理由：核心货盘多数已在承接店，价值主要来自聚焦去杂和统一内容。
 
-| Product ID | 原始标题 | 简洁中文名 | 营销参谋原 Shop Name | 国家与类目 | GMV | 涨幅 | 渠道区间 | 采集时间 |
-|---|---|---|---|---|---|---|---|---|
-| 1730000000000000003 | Deep Tissue Massage Gun | 深层筋膜按摩枪 | Recovery Lab | MY｜保健｜二级类目不可用 | USD 7K–10K | 暂无可靠涨幅 | LIVE：USD 3K–5K；VIDEO：USD 3K–5K | 2026-07-29T15:42:00+08:00 |
+#### 现有好品组合
 
-筛选 URL：https://mmm.tiktok-row.net/gcrm_overseas/phoenix/marketing-advisor/product-insights/top-product?country=MY&category=care
+| Product ID | 显示名 | 来源店铺（Shop ID） | GMV | ROAS | 组合判断 |
+|---|---|---|---:|---:|---|
+| 1731000000000000003 | 便携按摩器 | Recovery Home（7490000000000000003） | 300 | 不可计算 | 承接店内现有核心恢复品 |
+
+#### 营销参谋补品
+
+该店完成现有好品集中后，还可以补充同主题商品。以下候选来自营销参谋对应国家、类目和报告周期内的大盘表现，作为后续开品方向，不代表必须上架。
+
+**深层筋膜按摩枪｜Deep Tissue Massage Gun**
 
 ![深层筋膜按摩枪](https://example.com/care.png)
 
-对同质款标注功能、价带和规格重叠，由商家结合库存、毛利、供应链和履约决定最终上架组合。
+Product ID：1730000000000000003｜营销参谋原 Shop Name：Recovery Lab｜MY｜保健｜二级类目不可用｜2026-07-01 至 2026-07-26。总 GMV：USD 7K–10K｜涨幅：暂无可靠涨幅｜平均客单价：USD 18.5｜广告消耗：USD 400–600｜TR（估）：5.88%｜LIVE：USD 3K–5K｜VIDEO：USD 3K–5K。用于补充深层恢复场景，仍需商家评估供应链与售后。
+
+筛选 URL：https://mmm.tiktok-row.net/gcrm_overseas/phoenix/marketing-advisor/product-insights/top-product?country=MY&category=care｜采集时间：2026-07-29T15:42:00+08:00。
+
+## AI 延伸建议｜供客户评估
+
+### 方案 1
+
+- 可优先测试能在短时间内呈现“处理前后差异”的达人素材，并观察清洁刷是否能与高效烹饪货盘形成同主题连带。
+
+### 方案 2
+
+- 可围绕车内清洁完整流程测试达人短视频；若吸尘器解释成本较高，再用直播补充演示与答疑。
+
+### 方案 3
+
+- 该方案属于精修型，可先测试恢复场景内容是否能提升店铺垂直感，再决定是否扩大按摩设备范围。
+
+### 客户整体货盘评估
+
+优先落地真实跨店重组型方案；精修型方案的价值主要在去杂和统一表达。最终上架组合仍由客户结合库存、毛利、供应链、授权与履约条件评估。
