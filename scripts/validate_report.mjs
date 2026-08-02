@@ -299,6 +299,25 @@ function validateSupplementPurpose(section, rank, errors) {
   }
 }
 
+function validateSupplementLayout(section, rank, errors) {
+  const normalized = normalizeText(section);
+  const groups = [
+    ["商品定位", /(?:商品定位|商品信息|补品信息)/i],
+    ["大盘表现", /(?:大盘表现|市场表现|大盘数据)/i],
+    ["投入与渠道", /(?:投入与渠道|投放与渠道|广告与渠道)/i],
+    ["补品判断", /(?:补品判断|补品价值|建议与风险|补充判断)/i],
+    ["数据来源", /(?:数据来源|证据来源|来源链接)/i],
+  ];
+  const missing = groups
+    .filter(([, pattern]) => !pattern.test(normalized))
+    .map(([label]) => label);
+  if (missing.length > 0) {
+    errors.push(
+      `方案 ${rank} 的补品证据未按可扫描结构呈现；缺少：${missing.join("、")}。`,
+    );
+  }
+}
+
 function validateCandidateRendering(text, evidence, errors) {
   const requiredFields = [
     ["theme_name", "对应精品店主题"],
@@ -383,6 +402,7 @@ function validateCandidateRendering(text, evidence, errors) {
   }
   for (const rank of ranksWithCandidates) {
     validateSupplementPurpose(sections.get(rank), rank, errors);
+    validateSupplementLayout(sections.get(rank), rank, errors);
   }
 }
 
