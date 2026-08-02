@@ -12,10 +12,10 @@
 Aime Chrome 已验证支持 `get_tabs`、`snapshot`、`click(selector)`、`scroll`、`get(selector)` 和 `eval`；`select` 只用于原生 `<select>`，不要拿它操作本页自定义控件。
 
 1. `get_tabs` 取得 GCRM `tab_id`，先打开目标国家 direct URL。切换 `region` 会重置类目和日期，所以国家必须先设置。
-2. 做一次新的完整 `snapshot`，用 `category_selection.trigger_selector` 打开 Category；不要点击整个 Category 根节点，已选中类目时根节点点击可能命中清空控件。
+2. 做一次新的完整 `snapshot`，用 `category_selection.trigger_selector` 打开 Category；不要点击整个 Category 根节点，已选中类目时根节点点击可能命中清空控件。若主题需要二级类目，先用不带 `--l2` 的筛选计划展开一级类目并读取第二列原文，再用该原文重新运行 `build-filter-plan.mjs --l2 "<二级类目>"`。
 3. **浮层展开后再做一次新的完整 `snapshot`。** Cascader 浮层挂在 portal 中，不要继续使用展开前的旧 ref，也不要只截旧 Category 节点的子树。
-4. 用 `click` 的 CSS `selector` 参数点击 `target_checkbox_selector`。Aime 会把精确目标滚入可见区域；不要改用页面滚轮。
-5. 用 `get(selector)` 或 `eval` 回读目标行 `aria-checked`、已选类目文本和 `+0` 状态；不满足就继续修复，不能声称筛选完成。
+4. 只筛一级类目时，用 `click` 点击 `category_selection.target_checkbox_selector`。需要二级类目时，不选一级 checkbox：先点击 `level_two_selection.parent_expand_selector` 展开第二列，再点击 `level_two_selection.target_checkbox_selector`。Aime 的 DOM locator 会把精确目标滚入对应浮层；不要改用页面滚轮。
+5. 用 `get(selector)` 或 `eval` 回读目标行 `aria-checked`、已选类目文本和 `+0` 状态。二级类目必须同时满足 `level_two_selection.target_checked_selector` 为真，且已选值包含一级与二级类目原文；不满足就继续修复，不能声称筛选完成。
 
 Aime CLI 可直接按下面的骨架执行；`<...>` 必须替换为当前 tab 和 `build-filter-plan.mjs` 的真实输出：
 
@@ -25,11 +25,11 @@ aime-browser navigate --tab_id=<TAB_ID> --url='<DIRECT_URL>' --new_tab=false
 aime-browser snapshot --tab_id=<TAB_ID> --interactive=true --compact=true
 aime-browser click --tab_id=<TAB_ID> --selector='<CATEGORY_TRIGGER_SELECTOR>'
 aime-browser snapshot --tab_id=<TAB_ID> --interactive=true --compact=false --depth=12
-aime-browser click --tab_id=<TAB_ID> --selector='<TARGET_CHECKBOX_SELECTOR>'
+aime-browser click --tab_id=<TAB_ID> --selector='<L1_TARGET_CHECKBOX_SELECTOR>'
 aime-browser get --tab_id=<TAB_ID> --content_type=text --selector='<SELECTED_VALUE_SELECTOR>'
 ```
 
-若目标已经是 `aria-checked="true"`，跳过目标 checkbox 的点击。Aime 的 `select` 仅用于原生 `<select>`，不能用来操作本页 TreeSelect/Cascader。
+上面最后一次 `click` 适用于只筛一级类目。筛二级类目时替换为两步：先点击 `<L2_PARENT_EXPAND_SELECTOR>`，重新完整 snapshot，再点击 `<L2_TARGET_CHECKBOX_SELECTOR>`；不得先选一级 checkbox。若目标已经是 `aria-checked="true"`，跳过对应 checkbox 的点击。Aime 的 `select` 仅用于原生 `<select>`，不能用来操作本页 TreeSelect/Cascader。
 
 ## 状态机
 
@@ -63,6 +63,11 @@ GCRM 的 Country 是自定义 tree-select，Category 是自定义多选 cascader
 node dependencies/gcrm-core/build-filter-plan.mjs \
   --country "<COUNTRY>" \
   --category "<精确一级类目>"
+
+node dependencies/gcrm-core/build-filter-plan.mjs \
+  --country "<COUNTRY>" \
+  --category "<精确一级类目>" \
+  --l2 "<页面二级类目原文>"
 ```
 
 宿主从其他工作目录运行时，使用 `<SKILL_ROOT>` 绝对路径。执行返回的精确 selector 和完成检查，不自行猜控件名称。
@@ -79,10 +84,22 @@ node dependencies/gcrm-core/build-filter-plan.mjs \
 
 1. 用 `category_selection.trigger_selector`（`.potoo-marketing-advisor-cascader > .potoo-marketing-advisor-select-selector`）打开类目框；不要直接点击整个 `.potoo-marketing-advisor-cascader` 根节点，已选中类目时可能误触清空控件。
 2. 展开后重新读取 DOM。一级类目行是 `li[role="menuitemcheckbox"][title="<CATEGORY>"]`；其可访问名称可能是“`<CATEGORY> right`”，不要用只含类目名的 exact accessible-name 查询判断失败。
-3. **选择一级类目必须点击该行内的 `.potoo-marketing-advisor-cascader-checkbox`。** 点击行文字只会展开二级菜单，不等于选中一级类目。
-4. 只保留目标一级类目：在第一列一级类目菜单中取消 `title` 不等于目标类目的其他 `aria-checked="true"` checkbox，然后重新读取浮层 DOM。目标行已经是 `aria-checked="true"` 时不要再点；只有未选中时才点击目标 checkbox，避免把正确筛选反向取消。
-5. 目标类目在屏幕下方时，直接点击 `target_checkbox_selector`；DOM locator 会自动在类目浮层内滚到目标。严格 selector 数量为 0 时，只可在 `target_checkbox_fallback_selector` 恰好命中 1 个节点时使用它；清理其他已选项仍必须限定第一列。只有 DOM 路径失败时，才在类目浮层内部定点滚动。不得因“滚轮滑不动”让用户手选。
-6. 回读选中值：文本必须等于目标一级类目，且溢出标记是 `+0`；出现 `+1` 或更高表示仍有多个一级类目。
+3. **仅以一级类目筛选时，必须点击该行内的 `.potoo-marketing-advisor-cascader-checkbox`。** 点击行文字只会展开二级菜单，不等于选中一级类目。需要二级类目时则相反：点击行内容展开第二列，不先选一级 checkbox。
+4. 先清除第一列中 `title` 不等于目标类目的其他 `aria-checked="true"` checkbox，然后重新读取浮层 DOM。只筛一级时，目标行已经是 `aria-checked="true"` 就不要再点；需要二级时按下一节展开目标行并选择子项。
+5. 只筛一级且目标在屏幕下方时，直接点击 `target_checkbox_selector`；DOM locator 会自动在类目浮层内滚到目标。严格 selector 数量为 0 时，只可在 `target_checkbox_fallback_selector` 恰好命中 1 个节点时使用它。需要二级时改用下一节限定在第二列的 selector。只有 DOM 路径失败时，才在相应类目浮层内部定点滚动。不得因“滚轮滑不动”让用户手选。
+6. 只筛一级时，回读文本必须等于目标一级类目且溢出标记是 `+0`；需要二级时按下一节回读完整类目路径。
+
+### Level 2 Category
+
+二级类目同样是 Cascader portal 中的自定义 checkbox，不是原生下拉。不能只在文档中写一个二级类目名称，也不能把展开和滚动交给用户。
+
+1. 首次不带 `--l2` 运行筛选计划，打开 Category 后用 `category_selection.target_row_selector` 定位一级类目。点击 `level_two_selection.parent_expand_selector` 的行内容展开第二列；不要点击一级 checkbox。主 selector 数量为 0 时，只有 `parent_expand_fallback_selector` 恰好命中 1 个节点才可点击整行。
+2. 展开后重新做完整 DOM snapshot。第二列必须限定在 `level_two_selection.level_two_menu_selector` 内读取；从中选择最贴近精品店主题、能减少一级类目噪音的二级类目。复制页面 `title` 原文，不自行改写。
+3. 确定目标后，用页面原文重新运行 `build-filter-plan.mjs --l2 "<二级类目原文>"`，获得严格的第二列 row/checkbox selector。不得用模型猜测的文本直接点击。
+4. 点击 `level_two_selection.target_checkbox_selector`。目标不在当前视口时由 DOM locator 自动滚入第二列；严格 selector 为 0 时，只有 fallback selector 恰好命中 1 个节点才可使用。DOM 失败后只能在第二列浮层内定点滚动，不能滚页面主体。
+5. 回读 `level_two_selection.target_checked_selector`，确认 `aria-checked="true"`；同时回读已选值，必须包含一级和二级类目原文，且溢出标记为 `+0`。任一条件不满足都不能保存或写 `selected`。
+6. 每次查询必须写 `l2_attempted=true`。第二列确实为空时写 `l2_status=not_available`；页面确实不提供二级选择能力时写 `l2_status=not_supported`。这两种状态都必须在 `l2_status_reason` 保留本次 DOM/页面核验原因。控件失败不能冒充这两种状态，应进入自动恢复或 `partial`。
+7. 如果宽泛一级类目产生明显跨场景噪音，必须完成上述二级下钻；不能为了省时停在一级类目。只有二级选项不能改善主题匹配，或页面没有可用二级选项时，才保留一级结果和原因。
 
 ### 保存与核验
 
@@ -101,15 +118,15 @@ node dependencies/gcrm-core/build-filter-plan.mjs \
 
 1. 按上面的宿主路径启用本地浏览器控制，确认当前浏览器已登录 GCRM。
 2. 打开 Top Product 页面，逐项设置国家、精确起止日期和一级类目；页面支持时设置二级类目。
-3. 每次切换筛选后等待加载状态消失，再核对页面上实际显示的筛选值。不要把“点击了”当作“筛选成功”。
+3. 每次切换筛选后等待加载状态消失，再核对页面上实际显示的筛选值。二级类目需额外核对第二列 target 的 `aria-checked` 与已选路径文本；不要把“点击了”当作“筛选成功”。
 4. 优先从同一登录态页面的 XHR/API 或 DOM 批量读取；其次使用页面导出；最后读取可见表格。
 5. 自定义下拉框必须先运行 `build-filter-plan.mjs` 并按上面的已验证协议操作；不要只寻找原生 `select` / `listbox`。
 6. 若下拉框仍失败，按 `DOM → 键盘/视觉 → 同登录态 XHR/API → 页面导出` 恢复，每条路径都重新核对页面筛选状态。不得把国家或类目的逐组手动切换交给用户；唯一可请求的人工动作是一次性的浏览器授权或登录。所有恢复路径失败时记录为 `partial`，不能用用户代操作换取完整状态。
-7. 为每次查询记录 `query_id`、对应精品店的 `theme_rank` 与 `theme_name`、国家、类目、周期、筛选后 URL、采集时间、实际读取行数、采集方式，以及截图/DOM 快照/导出文件中的至少一种证据引用。
+7. 为每次查询记录 `query_id`、对应精品店的 `theme_rank` 与 `theme_name`、国家、类目、`l2_attempted`、必要时的 `l2_status_reason`、周期、筛选后 URL、采集时间、实际读取行数、采集方式，以及截图/DOM 快照/导出文件中的至少一种证据引用。
 8. 用 `product_id` 关联候选与查询，同时让候选的 `theme_rank`、`theme_name` 与所属查询完全一致；标题和店铺名不能代替 ID 对齐。
 9. 写出 `gcrm-evidence.json` 后运行：
 
-   `node dependencies/gcrm-core/validate-evidence.mjs --evidence gcrm-evidence.json --gcrm-window YYYY-MM-DD..YYYY-MM-DD --expected-themes <实际方案数>`
+   `node dependencies/gcrm-core/validate-evidence.mjs --evidence gcrm-evidence.json --report-window YYYY-MM-DD..YYYY-MM-DD --expected-themes <实际方案数>`
 
 ## 恢复与停止条件
 

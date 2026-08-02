@@ -58,12 +58,13 @@ function main() {
   const arguments_ = readArguments(process.argv.slice(2));
   if (!arguments_.country || !arguments_.category) {
     throw new Error(
-      "Usage: node build-filter-plan.mjs --country <COUNTRY> --category <精确一级类目>",
+      "Usage: node build-filter-plan.mjs --country <COUNTRY> --category <精确一级类目> [--l2 <页面二级类目原文>]",
     );
   }
 
   const country = normalizeCountry(arguments_.country);
   const category = normalizeCategory(arguments_.category);
+  const levelTwoCategory = arguments_.l2 || null;
   const directUrl = new URL(taxonomy.source_page);
   directUrl.searchParams.set("region", country);
 
@@ -91,14 +92,27 @@ function main() {
     " li[role=\"menuitemcheckbox\"]",
     `[title=${cssString(category)}]`,
   ].join("");
+  const levelTwoMenu = [
+    visibleCategoryDropdown,
+    " .potoo-marketing-advisor-cascader-menus",
+    " > .potoo-marketing-advisor-cascader-menu:nth-of-type(2)",
+  ].join("");
+  const levelTwoRow = levelTwoCategory
+    ? [
+        levelTwoMenu,
+        " li[role=\"menuitemcheckbox\"]",
+        `[title=${cssString(levelTwoCategory)}]`,
+      ].join("")
+    : null;
 
   const plan = {
-    schema_version: "1.0.0",
+    schema_version: "1.3.0",
     generated_from: "gcrm-core/filter-taxonomy.json",
     verified_ui_snapshot: "2026-07-30",
     page_url: taxonomy.source_page,
     country,
     category,
+    l2: levelTwoCategory,
     manual_selection_required: false,
     country_selection: {
       preferred_path: "direct_url",
@@ -137,20 +151,58 @@ function main() {
         "Use target_checkbox_fallback_selector only when the strict selector count is 0 and the fallback count is exactly 1. Never use the broad fallback to clear other checked rows.",
       selected_value_selector:
         ".potoo-marketing-advisor-cascader .potoo-marketing-advisor-select-selection-item-content",
-      selection_strategy:
-        "Clear checked level-1 rows whose title differs from the target, re-read the popup DOM, then click the target checkbox only when the target row is not already aria-checked=true.",
+      selection_strategy: levelTwoCategory
+        ? "Clear checked level-1 rows whose title differs from the target, then expand the target row without clicking its checkbox. Select only the requested level-2 checkbox so the filter is narrowed to that child."
+        : "Clear checked level-1 rows whose title differs from the target, re-read the popup DOM, then click the target checkbox only when the target row is not already aria-checked=true.",
       offscreen_strategy:
         "Click the target checkbox with a DOM locator; it auto-scrolls inside the category popup. Only if that fails, scroll inside the category menu rather than the page body.",
       accessible_name_warning:
         `The row accessible name may be "${category} right"; do not require an exact accessible name of only "${category}".`,
-      row_click_warning:
-        "Clicking the row text only expands the next category level. Click the checkbox child to select the level-1 category.",
-      single_category_verification:
-        `The selected text must be exactly "${category}" and the overflow marker must be +0, not +1 or higher.`,
+      row_click_warning: levelTwoCategory
+        ? "A requested level-2 filter requires clicking the level-1 row content to expand the second column; do not click the level-1 checkbox before choosing the child."
+        : "Clicking the row text only expands the next category level. Click the checkbox child to select the level-1 category.",
+      single_category_verification: levelTwoCategory
+        ? `The selected readback must contain both "${category}" and "${levelTwoCategory}", and the overflow marker must be +0.`
+        : `The selected text must be exactly "${category}" and the overflow marker must be +0, not +1 or higher.`,
     },
+    level_two_selection: levelTwoCategory
+      ? {
+          requested: true,
+          target: levelTwoCategory,
+          parent_expand_selector: `${categoryRow} .potoo-marketing-advisor-cascader-menu-item-content`,
+          parent_expand_fallback_selector: categoryRow,
+          parent_expand_guard:
+            "Click parent_expand_selector first. Use the row fallback only when the primary selector count is 0 and the row count is exactly 1; never click the level-1 checkbox to expand level 2.",
+          level_two_menu_selector: levelTwoMenu,
+          target_row_selector: levelTwoRow,
+          target_checked_selector: `${levelTwoRow}[aria-checked=\"true\"]`,
+          target_checkbox_selector: `${levelTwoRow} .potoo-marketing-advisor-cascader-checkbox`,
+          target_checkbox_fallback_selector:
+            `${visibleCategoryDropdown} li[role=\"menuitemcheckbox\"][title=${cssString(levelTwoCategory)}] .potoo-marketing-advisor-cascader-checkbox`,
+          fallback_guard:
+            "Use the level-2 fallback only when the strict second-column selector count is 0 and the fallback count is exactly 1.",
+          offscreen_strategy:
+            "Use the strict DOM locator so the browser scrolls inside the second cascader column. If that fails, scroll only inside level_two_menu_selector, never the page body.",
+          readback_strategy:
+            "Re-read target_checked_selector and the visible selected category text after clicking. aria-checked=true and the requested level-2 text must both be present before saving.",
+        }
+      : {
+          requested: false,
+          evaluation_required: true,
+          level_two_menu_selector: levelTwoMenu,
+          parent_expand_selector: `${categoryRow} .potoo-marketing-advisor-cascader-menu-item-content`,
+          parent_expand_fallback_selector: categoryRow,
+          instruction:
+            "Expand the target level-1 row and inspect the second column. Record l2_attempted=true. Select the closest level-2 option when it materially reduces noise; otherwise preserve a reason-backed not_available or not_supported status.",
+        },
     completion_checks: [
       `Visible country equals ${country}.`,
-      `Visible level-1 category equals ${category} and no second level-1 category remains selected.`,
+      levelTwoCategory
+        ? `The selected category path contains ${category} and ${levelTwoCategory}, with no unrelated level-1 category selected.`
+        : `Visible level-1 category equals ${category} and no second level-1 category remains selected.`,
+      levelTwoCategory
+        ? `The second cascader column contains ${levelTwoCategory}; its target row is aria-checked=true and the selected value readback contains the same text.`
+        : "The second cascader column was inspected and l2_attempted=true is recorded with either the selected value or a reason-backed unavailable/unsupported status.",
       "The exact requested start and end dates are visible.",
       "Click 保存, wait for loading to finish, then re-read the visible filters and numeric result rows.",
     ],
@@ -159,8 +211,11 @@ function main() {
         "direct_url_then_verify",
         "tree_select_expand_sea_if_needed",
         "dom_locator_auto_scroll",
+        "level_two_dom_locator_auto_scroll",
         "popup_scoped_visual_scroll",
         "same_authenticated_session_xhr_or_api",
+        "page_export",
+        "visible_table_read",
       ],
       user_may_be_asked_only_for: ["browser_permission", "login"],
       never_ask_user_for:

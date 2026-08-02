@@ -4,24 +4,23 @@ import {
   parseArgs,
   printResult,
   requireOptions,
+  resolveReportWindowArgs,
   validateInputs,
 } from "./lib.mjs";
 
 const HELP = `
-校验精品大店分析所需的两张表与两个明确周期。
+校验精品大店分析所需的两张表与一个全文报告周期。
 
 用法：
   node scripts/validate_input.mjs \\
     --workbook <一个含两张表的客户数据.xlsx> \\
-    --merchant-window 2026-07-01..2026-07-26 \\
-    --gcrm-window 2026-06-29..2026-07-28 [--json]
+    --report-window 2026-07-01..2026-07-26 [--json]
 
 或继续使用 CSV/TSV：
   node scripts/validate_input.mjs \\
     --id-data <ID数据.csv|tsv> \\
     --name-data <名字对照.csv|tsv> \\
-    --merchant-window 2026-07-01..2026-07-26 \\
-    --gcrm-window 2026-06-29..2026-07-28 [--json]
+    --report-window 2026-07-01..2026-07-26 [--json]
 
 说明：
   --workbook         推荐：一个 .xlsx 内含 ID 层级和名称对照两张 sheet，
@@ -30,8 +29,8 @@ const HELP = `
   --name-data        名字对照表；仅用于理解商品与店铺别名，不作为指标来源。
   --merchant         可选；客户/集团展示标签，不与 Shop Name 做一致性校验。
   --currency         可选；缺省为“内部报表原口径”，不改变源数值。
-  --merchant-window  客户货盘数据的开始日和结束日，不能省略或猜测。
-  --gcrm-window      营销参谋查询的开始日和结束日，不能省略或猜测。
+  --report-window    客户货盘与营销参谋共用的开始日和结束日。
+                     旧版 --merchant-window / --gcrm-window 仍可作别名，但不允许不同周期。
   --json             输出机器可读 JSON。
 
 支持一个 XLSX 两张 sheet、UTF-8 CSV/TSV，以及从两张完整表复制保存的制表符文本。
@@ -66,10 +65,7 @@ function publicSummary(validation, metadata) {
       merchant_role: "display_label_only",
       metric_policy: "ID 层级表原样事实；不更改源数值",
     },
-    periods: {
-      merchant: validation.merchantWindow ?? null,
-      gcrm: validation.gcrmWindow ?? null,
-    },
+    periods: { report: validation.reportWindow ?? null },
     inputs: {
       id_rows: validation.idTable?.rows.length ?? 0,
       name_rows: validation.nameTable?.rows.length ?? 0,
@@ -87,8 +83,7 @@ function publicSummary(validation, metadata) {
     },
     messages: validation.analysis_ready
       ? [
-          `客户货盘周期：${validation.merchantWindow.display}`,
-          `营销参谋周期：${validation.gcrmWindow.display}`,
+          `报告周期：${validation.reportWindow.display}`,
           `ID 数据 ${validation.idTable.rows.length} 行，其中 ${validation.analysisIdRows.length} 行进入分析；名字对照 ${validation.nameTable.rows.length} 行。`,
           `覆盖国家：${validation.countries.join("、") || "无"}；金额口径：${metadata.currency}。`,
           `名称匹配率：${(
@@ -121,12 +116,11 @@ if (args.help || args.h) {
 }
 
 try {
-  requireOptions(args, ["merchant-window", "gcrm-window"]);
+  const reportWindowRaw = resolveReportWindowArgs(args);
   const dataPaths = resolveDataPaths(args);
   const validation = validateInputs({
     ...dataPaths,
-    merchantWindowRaw: args["merchant-window"],
-    gcrmWindowRaw: args["gcrm-window"],
+    reportWindowRaw,
   });
   const summary = publicSummary(validation, {
     merchant:

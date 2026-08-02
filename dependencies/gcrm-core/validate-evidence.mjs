@@ -35,6 +35,41 @@ const QUERY_STATUSES = new Set([
 ]);
 const L2_STATUSES = new Set(["selected", "not_available", "not_supported"]);
 const CAPTURE_METHODS = new Set(["xhr", "dom", "export", "visible_table"]);
+const BROWSER_ADAPTER_TYPES = new Set(["aime_chrome", "other_local"]);
+const LOCAL_SESSION_MODE = "local_authenticated_browser";
+const AUTOMATED_BROWSER_PATHS = new Set([
+  "direct_url_then_verify",
+  "tree_select_expand_sea_if_needed",
+  "dom_locator_auto_scroll",
+  "level_two_dom_locator_auto_scroll",
+  "popup_scoped_visual_scroll",
+  "same_authenticated_session_xhr_or_api",
+  "page_export",
+  "visible_table_read",
+]);
+const CANDIDATE_ALLOWED_FIELDS = new Set([
+  "query_id",
+  "theme_rank",
+  "theme_name",
+  "product_id",
+  "original_title",
+  "chinese_name",
+  "original_shop_name",
+  "country",
+  "category",
+  "window",
+  "gmv_range",
+  "average_price",
+  "ads_cost_range",
+  "tr_estimate",
+  "tr_unavailable_reason",
+  "growth_range",
+  "channel_ranges",
+  "image_url",
+  "screenshot_ref",
+  "filter_url",
+  "captured_at",
+]);
 const RECOVERY_REQUIRED_BROWSER_STATES = new Set([
   "capability_blocked",
   "filter_failed",
@@ -43,7 +78,12 @@ const RECOVERY_REQUIRED_BROWSER_STATES = new Set([
 const PLACEHOLDER_PATTERN =
   /^(?:[-—–]|未知|待补|待定位|待查询|空|null|none|n\/?a|unavailable|placeholder)$/i;
 const FORBIDDEN_MANUAL_PATH_PATTERN =
-  /(?:user[_ -]?manual|manual[_ -]?(?:filter|select|handoff)|handoff|用户.*(?:手选|切换|切好|代选)|人工.*(?:筛选|切换|代选))/i;
+  /(?:user[_ -]?(?:manual|select)|ask[_ -]?user|manual[_ -]?(?:filter|select|handoff)|handoff|用户.*(?:手选|切换|切好|代选)|人工.*(?:筛选|切换|代选)|请用户.*(?:选择|切换|切好|回复))/i;
+const NONLOCAL_ADAPTER_PATTERN = /(?:cloud|remote|sandbox|headless|云端|远程|沙箱)/i;
+const OPEN_AMOUNT_RANGE_PATTERN =
+  /[<>≤≥]|\d\s*\+\s*$|以上|以下|起步|起|低于|高于|不低于|不高于|(?:^|\s)(?:under|over|above|below|up\s+to|more\s+than|less\s+than)(?:\s|$)/i;
+const TR_ABSOLUTE_TOLERANCE = 0.001;
+const TR_RELATIVE_TOLERANCE = 0.001;
 
 function parseArguments(argv) {
   const args = {};
@@ -51,7 +91,7 @@ function parseArguments(argv) {
     const item = argv[index];
     if (!item.startsWith("--")) continue;
     const key = item.slice(2);
-    if (key === "json") {
+    if (["json", "help", "h"].includes(key)) {
       args[key] = true;
       continue;
     }
@@ -66,7 +106,7 @@ function parseWindow(value) {
     /^(\d{4}-\d{2}-\d{2})\.\.(\d{4}-\d{2}-\d{2})$/,
   );
   if (!match || !validDate(match[1]) || !validDate(match[2]) || match[1] > match[2]) {
-    throw new Error("--gcrm-window 必须是有效的 YYYY-MM-DD..YYYY-MM-DD。");
+    throw new Error("--report-window 必须是有效的 YYYY-MM-DD..YYYY-MM-DD。");
   }
   return { start: match[1], end: match[2] };
 }
@@ -153,6 +193,13 @@ function validateCategory(category, label, errors) {
   if (category.l2_status === "selected" && !nonPlaceholder(category.l2)) {
     errors.push(`${label}.category.l2_status=selected 时必须保留二级类目原文。`);
   }
+  if (
+    ["not_available", "not_supported"].includes(category.l2_status) &&
+    category.l2 !== null &&
+    String(category.l2 ?? "").trim() !== ""
+  ) {
+    errors.push(`${label}.category 未选择二级类目时 l2 必须为 null。`);
+  }
 }
 
 function validateWindow(window, expectedWindow, label, errors) {
@@ -167,7 +214,7 @@ function validateWindow(window, expectedWindow, label, errors) {
   }
   if (!sameWindow(window, expectedWindow)) {
     errors.push(
-      `${label}.window 必须与营销参谋周期 ${expectedWindow.start}..${expectedWindow.end} 一致。`,
+      `${label}.window 必须与报告周期 ${expectedWindow.start}..${expectedWindow.end} 一致。`,
     );
   }
 }
@@ -224,6 +271,24 @@ function validateQuery(query, index, expectedWindow, errors) {
   if (!Number.isInteger(query.row_count) || query.row_count < 0) {
     errors.push(`${label}.row_count 必须是大于等于 0 的整数。`);
   }
+  if (typeof query.l2_attempted !== "boolean") {
+    errors.push(`${label}.l2_attempted 必须是布尔值。`);
+  }
+  if (
+    (query.result_status === "success" ||
+      query.category?.l2_status === "selected") &&
+    query.l2_attempted !== true
+  ) {
+    errors.push(`${label} 成功查询或已选二级类目时 l2_attempted 必须为 true。`);
+  }
+  if (
+    ["not_available", "not_supported"].includes(query.category?.l2_status) &&
+    !nonPlaceholder(query.l2_status_reason)
+  ) {
+    errors.push(
+      `${label}.l2_status_reason 缺失；二级类目不可用或页面不支持时必须保留核验原因。`,
+    );
+  }
   validateProof(query.proof, label, errors);
 }
 
@@ -233,6 +298,134 @@ function categoryMatches(candidate, query) {
     candidate?.l2_status === query?.l2_status &&
     String(candidate?.l2 ?? "") === String(query?.l2 ?? "")
   );
+}
+
+function amountMultiplier(unit) {
+  const normalized = String(unit ?? "").toUpperCase();
+  if (normalized === "K") return 1_000;
+  if (normalized === "M") return 1_000_000;
+  if (normalized === "B") return 1_000_000_000;
+  return 1;
+}
+
+export function parseAmountRange(value) {
+  if (typeof value === "number") {
+    if (!Number.isFinite(value) || value < 0) return null;
+    return { lower: value, upper: value, midpoint: value };
+  }
+
+  const raw = String(value ?? "").replace(/,/g, "").trim();
+  if (!raw || OPEN_AMOUNT_RANGE_PATTERN.test(raw)) return null;
+
+  const tokenPattern = /(\d+(?:\.\d+)?)\s*([KMB])?/gi;
+  const matches = [...raw.matchAll(tokenPattern)];
+  if (matches.length < 1 || matches.length > 2) return null;
+
+  const residual = raw
+    .replace(/(\d+(?:\.\d+)?)\s*([KMB])?/gi, "")
+    .replace(/\b(?:USD|MYR|RM|PHP|VND|IDR|THB|SGD|EUR|GBP)\b/gi, "")
+    .replace(/[\s$€£¥₫₱₹()\[\]{}:：/–—~～至-]/g, "")
+    .replace(/\bto\b/gi, "");
+  if (residual !== "") return null;
+
+  if (matches.length === 2) {
+    const between = raw.slice(
+      (matches[0].index ?? 0) + matches[0][0].length,
+      matches[1].index ?? raw.length,
+    );
+    if (!/(?:-|–|—|~|～|至|\bto\b)/i.test(between)) return null;
+  }
+
+  const parsed = matches.map((match) => ({
+    rawNumber: Number(match[1]),
+    unit: String(match[2] ?? "").toUpperCase(),
+  }));
+  if (parsed.some((item) => !Number.isFinite(item.rawNumber))) return null;
+
+  if (parsed.length === 2) {
+    const [left, right] = parsed;
+    if (!left.unit && right.unit && left.rawNumber < right.rawNumber) {
+      left.unit = right.unit;
+    }
+    if (left.unit && !right.unit) {
+      const rawUpper = right.rawNumber;
+      const scaledLower = left.rawNumber * amountMultiplier(left.unit);
+      if (rawUpper < scaledLower) right.unit = left.unit;
+    }
+  }
+
+  const lower = parsed[0].rawNumber * amountMultiplier(parsed[0].unit);
+  const upperItem = parsed[1] ?? parsed[0];
+  const upper = upperItem.rawNumber * amountMultiplier(upperItem.unit);
+  if (!Number.isFinite(lower) || !Number.isFinite(upper) || lower < 0 || upper < lower) {
+    return null;
+  }
+  return { lower, upper, midpoint: (lower + upper) / 2 };
+}
+
+function validAveragePrice(value) {
+  if (typeof value === "number") return Number.isFinite(value) && value >= 0;
+  return (
+    typeof value === "string" &&
+    value.trim() !== "" &&
+    /\d/.test(value)
+  );
+}
+
+function validateCandidateMetrics(candidate, label, errors) {
+  if (!validAveragePrice(candidate.average_price)) {
+    errors.push(`${label}.average_price 必须保留页面展示的数值客单价。`);
+  }
+  if (
+    typeof candidate.ads_cost_range !== "string" ||
+    candidate.ads_cost_range.trim() === ""
+  ) {
+    errors.push(`${label}.ads_cost_range 必须保留页面展示的广告消耗原值。`);
+  }
+  if (!Object.hasOwn(candidate, "tr_estimate")) {
+    errors.push(`${label}.tr_estimate 缺失。`);
+    return;
+  }
+
+  const gmv = parseAmountRange(candidate.gmv_range);
+  const adsCost = parseAmountRange(candidate.ads_cost_range);
+  const canCalculate = gmv && adsCost && gmv.midpoint > 0;
+
+  if (!canCalculate) {
+    if (candidate.tr_estimate !== null) {
+      errors.push(
+        `${label}.tr_estimate 在总 GMV 或广告消耗无法形成有效闭区间中点时必须为 null。`,
+      );
+    }
+    if (!nonPlaceholder(candidate.tr_unavailable_reason)) {
+      errors.push(
+        `${label}.tr_unavailable_reason 缺失；TR（估）不可计算时必须说明原因。`,
+      );
+    }
+    return;
+  }
+
+  if (
+    typeof candidate.tr_estimate !== "number" ||
+    !Number.isFinite(candidate.tr_estimate) ||
+    candidate.tr_estimate < 0
+  ) {
+    errors.push(
+      `${label}.tr_estimate 必须按广告消耗区间中点除以总 GMV 区间中点计算。`,
+    );
+    return;
+  }
+
+  const expected = adsCost.midpoint / gmv.midpoint;
+  const tolerance = Math.max(
+    TR_ABSOLUTE_TOLERANCE,
+    Math.abs(expected) * TR_RELATIVE_TOLERANCE,
+  );
+  if (Math.abs(candidate.tr_estimate - expected) > tolerance) {
+    errors.push(
+      `${label}.tr_estimate=${candidate.tr_estimate} 与区间中点公式结果 ${expected.toFixed(6)} 不一致。`,
+    );
+  }
 }
 
 function validateCandidate(
@@ -246,6 +439,11 @@ function validateCandidate(
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
     errors.push(`${label} 必须是对象。`);
     return;
+  }
+  if (Object.keys(candidate).some((field) => !CANDIDATE_ALLOWED_FIELDS.has(field))) {
+    errors.push(
+      `${label} 包含证据合同未声明的字段；候选只能使用 schema 明确列出的字段。`,
+    );
   }
   const requiredTextFields = [
     ["theme_name", "对应精品店主题"],
@@ -276,6 +474,7 @@ function validateCandidate(
   ) {
     errors.push(`${label}.gmv_range 必须保留页面数值或数值区间。`);
   }
+  validateCandidateMetrics(candidate, label, errors);
   if (
     nonPlaceholder(candidate.growth_range) &&
     !/\d/.test(String(candidate.growth_range)) &&
@@ -368,8 +567,8 @@ export function validateGcrmEvidence(
     };
   }
 
-  if (evidence.schema_version !== "1.0.0") {
-    errors.push("schema_version 必须是 1.0.0。");
+  if (evidence.schema_version !== "1.1.0") {
+    errors.push("schema_version 必须是 1.1.0。");
   }
   if (evidence.source?.system !== "GCRM Marketing Advisor") {
     errors.push("source.system 必须是 GCRM Marketing Advisor。");
@@ -393,6 +592,21 @@ export function validateGcrmEvidence(
   }
   if (!nonPlaceholder(browser.adapter)) {
     errors.push("browser.adapter 缺失。");
+  }
+  if (!BROWSER_ADAPTER_TYPES.has(browser.adapter_type)) {
+    errors.push("browser.adapter_type 必须是 aime_chrome 或 other_local。");
+  }
+  if (browser.session_mode !== LOCAL_SESSION_MODE) {
+    errors.push("browser.session_mode 必须是 local_authenticated_browser。");
+  }
+  if (
+    browser.adapter_type === "aime_chrome" &&
+    String(browser.adapter ?? "").trim().toLowerCase() !== "aime chrome"
+  ) {
+    errors.push("browser.adapter_type=aime_chrome 时 adapter 必须是 Aime Chrome。");
+  }
+  if (NONLOCAL_ADAPTER_PATTERN.test(String(browser.adapter ?? ""))) {
+    errors.push("browser.adapter 必须指向当前本地浏览器，不能使用非本地会话。");
   }
   if (browser.local_authenticated_session !== true) {
     errors.push("必须使用本地已登录浏览器；local_authenticated_session 必须为 true。");
@@ -419,12 +633,33 @@ export function validateGcrmEvidence(
           `browser.attempted_paths 不能把逐组人工筛选或交接用户当作恢复路径：${manualPaths.join("、")}。`,
         );
       }
+      const unknownPaths = validAttemptedPaths.filter(
+        (value) => !AUTOMATED_BROWSER_PATHS.has(value),
+      );
+      if (unknownPaths.length > 0) {
+        errors.push(
+          "browser.attempted_paths 只能记录合同允许的自动浏览器路径，不能使用自定义或人工交接路径。",
+        );
+      }
     }
+  }
+  if (
+    COMPLETE_BROWSER_STATES.has(browser.state) &&
+    (!Array.isArray(browser.attempted_paths) ||
+      browser.attempted_paths.filter((value) =>
+        AUTOMATED_BROWSER_PATHS.has(value),
+      ).length < 1)
+  ) {
+    errors.push(
+      `browser.state=${browser.state} 时必须记录至少 1 条合同允许的自动浏览器路径。`,
+    );
   }
   if (RECOVERY_REQUIRED_BROWSER_STATES.has(browser.state)) {
     if (
       !Array.isArray(browser.attempted_paths) ||
-      browser.attempted_paths.filter(nonPlaceholder).length < 2
+      browser.attempted_paths.filter((value) =>
+        AUTOMATED_BROWSER_PATHS.has(value),
+      ).length < 2
     ) {
       errors.push(
         `browser.state=${browser.state} 时必须记录至少 2 条自动恢复路径到 browser.attempted_paths，不能尝试一次就交给用户。`,
@@ -608,6 +843,12 @@ export function validateGcrmEvidence(
       successful_query_count: successfulQueries.length,
       failed_query_count: failedQueries.length,
       candidate_count: candidates.length,
+      tr_available_candidate_count: candidates.filter(
+        (candidate) => typeof candidate?.tr_estimate === "number",
+      ).length,
+      tr_unavailable_candidate_count: candidates.filter(
+        (candidate) => candidate?.tr_estimate === null,
+      ).length,
       expected_theme_count: expectedThemeCount,
       successful_theme_ranks: [
         ...new Set(successfulQueries.map((query) => query?.theme_rank)),
@@ -637,15 +878,37 @@ if (isMain) {
   const args = parseArguments(process.argv.slice(2));
   if (args.help || args.h) {
     process.stdout.write(
-      "用法：node dependencies/gcrm-core/validate-evidence.mjs --evidence <gcrm-evidence.json> --gcrm-window YYYY-MM-DD..YYYY-MM-DD --expected-themes <实际方案数> [--json]\n",
+      "用法：node dependencies/gcrm-core/validate-evidence.mjs --evidence <gcrm-evidence.json> --report-window YYYY-MM-DD..YYYY-MM-DD --expected-themes <实际方案数> [--json]\n",
     );
     process.exit(0);
   }
   try {
     if (!args.evidence) throw new Error("缺少 --evidence。");
-    if (!args["gcrm-window"]) throw new Error("缺少 --gcrm-window。");
+    const rawWindows = [
+      ["--report-window", args["report-window"]],
+      ["--merchant-window", args["merchant-window"]],
+      ["--gcrm-window", args["gcrm-window"]],
+    ].filter(([, value]) => value);
+    if (rawWindows.length === 0) throw new Error("缺少 --report-window。");
     if (!args["expected-themes"]) throw new Error("缺少 --expected-themes。");
-    const expectedWindow = parseWindow(args["gcrm-window"]);
+    const parsedWindows = rawWindows.map(([name, value]) => [
+      name,
+      value,
+      parseWindow(value),
+    ]);
+    const expectedWindow = parsedWindows[0][2];
+    if (
+      parsedWindows.some(
+        ([, , window]) =>
+          window.start !== expectedWindow.start || window.end !== expectedWindow.end,
+      )
+    ) {
+      throw new Error(
+        `全文只支持一个报告周期；同时提供的 ${parsedWindows
+          .map(([name, value]) => `${name}=${value}`)
+          .join("、")} 不一致。`,
+      );
+    }
     const expectedThemeCount = Number(args["expected-themes"]);
     const evidence = JSON.parse(fs.readFileSync(args.evidence, "utf8"));
     const result = validateGcrmEvidence(evidence, expectedWindow, {

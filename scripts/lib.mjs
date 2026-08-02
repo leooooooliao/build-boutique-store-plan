@@ -73,6 +73,39 @@ export function requireOptions(args, names) {
   }
 }
 
+export function resolveReportWindowArgs(args) {
+  const provided = [
+    ["--report-window", args["report-window"]],
+    ["--merchant-window", args["merchant-window"]],
+    ["--gcrm-window", args["gcrm-window"]],
+  ].filter(([, value]) => value && value !== true);
+  if (provided.length === 0) {
+    throw new Error(
+      "缺少参数：--report-window（旧版 --merchant-window / --gcrm-window 仍可作兼容别名）",
+    );
+  }
+
+  const parsed = provided.map(([name, value]) => ({
+    name,
+    value,
+    window: parseWindow(value, `${name} 报告周期`),
+  }));
+  const selected = parsed[0].window;
+  const conflicts = parsed.filter(
+    (candidate) =>
+      candidate.window.start !== selected.start ||
+      candidate.window.end !== selected.end,
+  );
+  if (conflicts.length > 0) {
+    throw new Error(
+      `全文只支持一个报告周期；同时提供的 ${parsed
+        .map(({ name, value }) => `${name}=${value}`)
+        .join("、")} 不一致。`,
+    );
+  }
+  return `${selected.start}..${selected.end}`;
+}
+
 function countDelimiter(line, delimiter) {
   let count = 0;
   let quoted = false;
@@ -745,13 +778,9 @@ function prepareAnalysisIdRows(table, autoHandled, notices) {
         inferredCountryRows += 1;
         row.__country_source = "same_shop_id_unique_country";
       } else {
+        country = "UNKNOWN";
         unresolvedCountryRows += 1;
-        isolatedRows.push({
-          row: row.__row,
-          reason: "country_unresolved",
-          candidate_countries: candidates ? [...candidates].sort() : [],
-        });
-        continue;
+        row.__country_source = "unresolved_unknown";
       }
     } else {
       row.__country_source = "source";
@@ -784,7 +813,7 @@ function prepareAnalysisIdRows(table, autoHandled, notices) {
   }
   if (unresolvedCountryRows > 0) {
     autoHandled.push(
-      `${unresolvedCountryRows} 行国家无法从同 Shop ID 唯一确定，已隔离，不影响其他国家。`,
+      `${unresolvedCountryRows} 行国家无法从同 Shop ID 唯一确定，已保留为 UNKNOWN 参与事实汇总；不悄悄并入任一国家。`,
     );
   }
   if (missingCoreRows > 0) {
@@ -879,6 +908,7 @@ function prepareAnalysisNameRows(table, autoHandled, notices) {
 export function validateInputs({
   idDataPath,
   nameDataPath,
+  reportWindowRaw,
   merchantWindowRaw,
   gcrmWindowRaw,
 }) {
@@ -887,16 +917,20 @@ export function validateInputs({
   const notices = [];
   let idTable;
   let nameTable;
+  let reportWindow;
   let merchantWindow;
   let gcrmWindow;
 
   try {
-    merchantWindow = parseWindow(merchantWindowRaw, "客户货盘周期");
-  } catch (error) {
-    hardBlockers.push(error.message);
-  }
-  try {
-    gcrmWindow = parseWindow(gcrmWindowRaw, "营销参谋周期");
+    const normalizedRaw = resolveReportWindowArgs({
+      "report-window": reportWindowRaw,
+      "merchant-window": merchantWindowRaw,
+      "gcrm-window": gcrmWindowRaw,
+    });
+    reportWindow = parseWindow(normalizedRaw, "报告周期");
+    // Backward-compatible internal aliases. They can no longer diverge.
+    merchantWindow = reportWindow;
+    gcrmWindow = reportWindow;
   } catch (error) {
     hardBlockers.push(error.message);
   }
@@ -940,7 +974,7 @@ export function validateInputs({
     idTable.isolatedRows = isolatedIdRows;
     if (analysisIdRows.length === 0) {
       hardBlockers.push(
-        "ID 层级表没有任何可用经营行：核心 ID、国家与 payment_1d 无法共同形成可分析记录。",
+        "ID 层级表没有任何可用经营行：核心 Product ID / Shop ID 与 payment_1d 无法共同形成可分析记录。",
       );
     }
   }
@@ -1068,6 +1102,7 @@ export function validateInputs({
     ok: analysisReady,
     errors: hardBlockers,
     warnings,
+    reportWindow,
     merchantWindow,
     gcrmWindow,
     idTable,

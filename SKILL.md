@@ -43,8 +43,7 @@ node "<SKILL_ROOT>/scripts/sync_skill_release.mjs" --apply --json
 
 - ID 层级数据和名称对照数据。推荐上传一个含两个 Sheet 的 Excel；也可在对话中分两段粘贴完整表格并标注来源；
 - 客户/集团名称，仅用于报告标题；
-- 客户货盘准确起止日；
-- 营销参谋准确起止日。
+- 一个准确报告起止日；客户货盘和营销参谋统一使用这一周期，不再分别询问。
 
 两个报表都必须先把“商家”切换为同一目标客户：
 
@@ -62,8 +61,7 @@ node "<SKILL_ROOT>/scripts/sync_skill_release.mjs" --apply --json
 node "<SKILL_ROOT>/scripts/validate_input.mjs" \
   --workbook "<客户货盘.xlsx>" \
   --merchant "<客户或集团名称>" \
-  --merchant-window "YYYY-MM-DD..YYYY-MM-DD" \
-  --gcrm-window "YYYY-MM-DD..YYYY-MM-DD" \
+  --report-window "YYYY-MM-DD..YYYY-MM-DD" \
   --json
 ```
 
@@ -74,8 +72,7 @@ node "<SKILL_ROOT>/scripts/validate_input.mjs" \
   --id-data "<ID层级.csv|tsv>" \
   --name-data "<名称对照.csv|tsv>" \
   --merchant "<客户或集团名称>" \
-  --merchant-window "YYYY-MM-DD..YYYY-MM-DD" \
-  --gcrm-window "YYYY-MM-DD..YYYY-MM-DD" \
+  --report-window "YYYY-MM-DD..YYYY-MM-DD" \
   --json
 ```
 
@@ -84,7 +81,7 @@ node "<SKILL_ROOT>/scripts/validate_input.mjs" \
 - 文件无法读取、为空或无法识别两张来源表；
 - 隔离少量损坏行后，核心 Product ID / Shop ID 仍整体不可用；
 - ID 层级表完全没有可用商品—店铺记录；
-- 缺少且无法确认准确时间窗口。
+- 缺少且无法确认准确报告周期。
 
 `auto_handled` 和 `notices` 直接记录后继续。空 L3、空 cost、空名称、空国家、多名称、部分国家缺失、集团名与店名不同和极端值均不阻断。一次列全真正阻断项，不发 A/B/C 选择题。
 
@@ -98,8 +95,7 @@ node "<SKILL_ROOT>/scripts/validate_input.mjs" \
 node "<SKILL_ROOT>/scripts/prepare_portfolio.mjs" \
   --workbook "<客户货盘.xlsx>" \
   --merchant "<客户或集团名称>" \
-  --merchant-window "YYYY-MM-DD..YYYY-MM-DD" \
-  --gcrm-window "YYYY-MM-DD..YYYY-MM-DD" \
+  --report-window "YYYY-MM-DD..YYYY-MM-DD" \
   --output "<任务输出目录>/portfolio-audit.json" \
   --analysis-output "<任务输出目录>/analysis-pool.json"
 ```
@@ -121,7 +117,7 @@ node "<SKILL_ROOT>/scripts/prepare_portfolio.mjs" \
 
 `portfolio-audit.json` 保留全量聚合与明细用于审计；AI 先读取较小的 `analysis-pool.json`，不要先把全量 Product ID 放进上下文。精简候选池按 `payment_1d` 排序，并按 `country × product_id` 跨 Shop 汇总，同时保留来源 Shop 明细。默认先审阅 Top 100；当主题不足、名称覆盖不足或 GMV 过于分散时自动扩到 Top 200，不向用户确认，也不把 100/200 写成商家必须采用的商品数量。
 
-向用户回执只需说明：读取成功、两表行数、识别国家、ID 状态、两个周期和自动处理摘要。不要把每个空值变成确认题。
+向用户回执只需说明：读取成功、两表行数、识别国家、ID 状态、统一报告周期和自动处理摘要。不要把每个空值变成确认题。
 
 ## 4. 组合 Top 3 精品店主题
 
@@ -145,7 +141,7 @@ node "<SKILL_ROOT>/scripts/prepare_portfolio.mjs" \
 ```bash
 node "<SKILL_ROOT>/scripts/validate_plan_evidence.mjs" \
   --evidence "<plan-evidence.json>" \
-  --merchant-window "YYYY-MM-DD..YYYY-MM-DD" \
+  --report-window "YYYY-MM-DD..YYYY-MM-DD" \
   --expected-plans "<实际方案数，默认 3>"
 ```
 
@@ -159,7 +155,7 @@ Top 3 主题确定后，完整读取 `references/gcrm-integration.md`、`referen
 
 对每个主题：
 
-1. 使用该主题的国家、准确周期和最贴近的一级/二级类目。
+1. 使用该主题的国家、统一报告周期和最贴近的一级/二级类目。
 2. 先运行：
 
    ```bash
@@ -170,9 +166,9 @@ Top 3 主题确定后，完整读取 `references/gcrm-integration.md`、`referen
 
    按输出的 direct URL、selector、浮层内自动滚动策略和完成检查操作。不要只找原生下拉框；`get_tabs` 成功后必须继续。
 3. 实际打开营销参谋并核验页面筛选状态，等待加载完成。
-4. 先看 GMV Top 50；有效候选不足时再扩 Top 100 或飙升榜。
+4. 先看 GMV Top 50；有效候选不足时再扩 Top 100 或飙升榜。宽泛一级类目噪音过大时，AI 自动下钻最贴近主题的二级类目；不得把展开、滚动和点击回推给用户。
 5. 只补主题内真实缺口，不设数量配额。
-6. 保存 Product ID、原始标题、中文短名、原 Shop Name、类目、GMV/涨幅/渠道区间、商品图或截图、筛选页 URL 和含时区的采集时间。
+6. 保存 Product ID、原始标题、中文短名、原 Shop Name、类目、总 GMV/涨幅、平均客单价、广告消耗区间、TR（估）、渠道区间、商品图或截图、筛选页 URL 和含时区的采集时间。`TR（估） = 广告消耗区间中点 ÷ 总 GMV 区间中点`；区间无法形成可靠中点时写“不可计算”及原因。
 7. 把补品证据与对应图片、店铺和来源逐一绑定。
 
 每个实际方案都必须至少有一次成功查询；在查询和补品证据中写入对应的 `theme_rank`、`theme_name`。不能用一个主题的营销参谋结果替另外两个主题过关。
@@ -186,19 +182,9 @@ Top 3 主题确定后，完整读取 `references/gcrm-integration.md`、`referen
 
 浏览器不可用、登录失败、页面操作失败或找不到另一个 Skill 都是 `partial`，不是“无候选”。用户若决定暂时停止，只能交付醒目标注的“精品店方案部分草稿｜营销参谋待完成”，不能称为完整精品店方案。
 
-客户周期与营销参谋周期不一致时，分别用于货盘重组和补品验证，不直接比较绝对 GMV。
+客户货盘和营销参谋必须使用同一报告周期。旧版命令参数若携带两个周期，只能在两者完全相同时继续；不一致时由 AI 在内部修正流程，不向用户制造第二套周期。
 
-## 6. 给内容渠道建议
-
-根据营销参谋渠道结构、商品可演示性、客单和决策成本判断：
-
-- 持续演示、答疑或高客单设备可偏直播承接。
-- 前后对比强、理解门槛低的商品可偏短视频和达人铺量。
-- 证据混合时给组合打法，不强行二选一。
-
-把渠道写成内容和成交建议，不写成无数据支撑的 SKU 角色。事实与判断分开，推断标注为“判断”。
-
-## 7. 交付一份好看且可审计的文档
+## 6. 交付一份好看且可审计的文档
 
 读取：
 
@@ -210,23 +196,27 @@ Top 3 主题确定后，完整读取 `references/gcrm-integration.md`、`referen
 
 固定的是信息和证据，不是逐字模板。保留这些视觉特征：
 
-- 首屏结论和 Top 3 总表；
+- 标题与唯一报告周期；
+- 位于 Top 3 之前的核心结论；
+- Top 3 总表；
+- 三个独立方案，每个方案内同时放现有好品和本方案营销参谋补品；
 - 清晰层级与适量留白；
 - 商品图靠近对应营销参谋证据；
 - 表格、图片与可点击 URL 互相对应；
 - 一种克制的重点色和可快速扫描的卡片/提示块。
 
-允许 Aime、Mira 或其他宿主采用最自然的组件，不机械复刻 Sample。创建飞书文档后回读，核验标题、两个时间窗口、表格、图片和链接。
+报告最后单独放 `AI 延伸建议｜供客户评估`。必须按方案 1、方案 2、方案 3 分开，可再附客户整体货盘评估；达人、直播/短视频和货品测试等自由判断只能出现在这里。每个方案通常 1–3 点，整段通常约 250–400 个中文字符，不为凑长度写套话。
 
-## 8. 报告 QA
+允许 Aime、Mira 或其他宿主采用最自然的组件，不机械复刻 Sample。创建飞书文档后回读，核验标题、统一周期、核心结论、Top 3、三个方案、图片、链接和末尾 AI 延伸建议。
+
+## 7. 报告 QA
 
 保存最终文档的可校验文本后运行：
 
 ```bash
 node "<SKILL_ROOT>/scripts/validate_report.mjs" \
   --report "<report.md|html|xml|txt>" \
-  --merchant-window "YYYY-MM-DD..YYYY-MM-DD" \
-  --gcrm-window "YYYY-MM-DD..YYYY-MM-DD" \
+  --report-window "YYYY-MM-DD..YYYY-MM-DD" \
   --generated-date "YYYY-MM-DD" \
   --plan-evidence "<plan-evidence.json>" \
   --gcrm-evidence "<gcrm-evidence.json>" \
@@ -237,18 +227,20 @@ node "<SKILL_ROOT>/scripts/validate_report.mjs" \
 
 交付前确认：
 
-- 两个准确窗口、生成日和识别国家已出现。
+- 唯一准确报告周期、生成日和识别国家已出现。
+- 核心结论位于 Top 3 之前，统一落地逻辑只出现一次。
 - Top 3 有优先级、主题、承接 Shop ID 和候选范围指标。
 - 每个方案的店内/店外 GMV、商品原型、重组/精修分类和排序理由已通过结构化方案证据校验。
-- 每个补品都有 Product ID、原始标题、中文短名、原 Shop Name、区间指标、图片、URL 和含时区采集时间。
+- 每个方案内同时展示结构化现有好品和绑定到该方案的补品，并紧跟补品用途说明。
+- 每个补品都有 Product ID、原始标题、中文短名、原 Shop Name、总 GMV、涨幅、平均客单价、广告消耗区间、TR（估）、渠道区间、图片、URL 和含时区采集时间。
 - 无候选结论逐次展示实际查询范围、含时区采集时间、读取行数和证据引用。
 - 没有固定主推数量、尺寸或规格建议。
-- 数据说明覆盖自动推断、可选指标覆盖率和未出现国家。
+- `AI 延伸建议｜供客户评估` 位于最后，三个方案分开，没有把固定事实藏在 AI 建议里。
 - 飞书文档已回读，图片与链接一一对应。
 
 QA 失败先修正文档再交付；营销参谋未完成时不得通过完整报告 QA。
 
-## 9. 时间优化
+## 8. 时间优化
 
 - 先定 Top 3，再查对应国家 × 类目，不遍历全市场。
 - 默认查最贴近主题的类目和 GMV Top 50，证据不足再扩。
@@ -256,6 +248,6 @@ QA 失败先修正文档再交付；营销参谋未完成时不得通过完整�
 - 不制作中间汇报 Excel；Excel 只作输入，最终交付一份文档。
 - 把确定性清洗和 QA 交给脚本，把 AI 时间留给主题与组合判断。
 
-## 10. 权限边界
+## 9. 权限边界
 
 不绕过登录或权限，不索要账号密码、Cookie 或 Token。不把客户数据、真实 Product ID / Shop ID、内部截图或任务报告写入公开 Skill、公开仓库或 Release。

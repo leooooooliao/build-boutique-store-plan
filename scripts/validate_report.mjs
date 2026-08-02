@@ -6,6 +6,7 @@ import {
   parseWindow,
   printResult,
   requireOptions,
+  resolveReportWindowArgs,
 } from "./lib.mjs";
 import { validatePlanEvidence } from "./validate_plan_evidence.mjs";
 import { validateGcrmEvidence } from "../dependencies/gcrm-core/validate-evidence.mjs";
@@ -16,8 +17,7 @@ const HELP = `
 用法：
   node scripts/validate_report.mjs \\
     --report <report.md|html|xml|txt|-> \\
-    --merchant-window 2026-07-01..2026-07-26 \\
-    --gcrm-window 2026-06-29..2026-07-28 \\
+    --report-window 2026-07-01..2026-07-26 \\
     --generated-date 2026-07-29 \\
     --plan-evidence <plan-evidence.json> \\
     --gcrm-evidence <gcrm-evidence.json> \\
@@ -31,6 +31,7 @@ const HELP = `
 --gcrm-mode 已废弃。模型不能自行选择状态，也不能用 unavailable 绕过营销参谋。
 完整交付还必须读取 plan-evidence.json，由程序核算重组型/精修型与默认排序。
 --report - 可从标准输入读取。
+旧版 --merchant-window / --gcrm-window 仍兼容；若与 --report-window 同时提供，所有周期必须一致。
 `.trim();
 
 function readText(filePath, label) {
@@ -87,7 +88,16 @@ function normalizeText(value) {
 
 function reportContains(text, value) {
   const needle = normalizeText(value);
-  return needle !== "" && normalizeText(text).includes(needle);
+  const normalized = normalizeText(text);
+  if (needle !== "" && normalized.includes(needle)) return true;
+  if (typeof value !== "number" || !Number.isFinite(value)) return false;
+
+  const tolerance = Math.max(0.000001, Math.abs(value) * 0.000000001);
+  const renderedNumbers = normalized.match(/[-+]?\d[\d,]*(?:\.\d+)?/g) ?? [];
+  return renderedNumbers.some((token) => {
+    const parsed = Number(token.replaceAll(",", ""));
+    return Number.isFinite(parsed) && Math.abs(parsed - value) <= tolerance;
+  });
 }
 
 function reportContainsCategoryState(text, category) {
@@ -261,6 +271,34 @@ function findHardCountDirectives(text) {
   return [...new Set(matches)];
 }
 
+function validateSupplementPurpose(section, rank, errors) {
+  const normalized = normalizeText(section);
+  const hasSupplementHeading = /(?:营销参谋|gcrm)[^。；;\n]{0,12}(?:补品|候选)|(?:补品|候选)[^。；;\n]{0,12}(?:营销参谋|gcrm)/i.test(
+    normalized,
+  );
+  const explainsAfterConcentration = /(?:现有好品|已有好品|货品集中|好品集中)[^。；;\n]{0,45}(?:补充|补品|开品|候选)/i.test(
+    normalized,
+  );
+  const identifiesMarketSource = /(?:营销参谋|gcrm)[^。；;\n]{0,45}(?:大盘|榜单|类目表现|市场表现)/i.test(
+    normalized,
+  );
+  const avoidsMandatoryListing = /(?:不代表必须|不等于必须|作为[^。；;\n]{0,12}(?:开品|测试|候选|方向)|供[^。；;\n]{0,10}评估)/i.test(
+    normalized,
+  );
+  if (!hasSupplementHeading) {
+    errors.push(`方案 ${rank} 缺少独立的营销参谋补品小节。`);
+  }
+  if (
+    !explainsAfterConcentration ||
+    !identifiesMarketSource ||
+    !avoidsMandatoryListing
+  ) {
+    errors.push(
+      `方案 ${rank} 的补品用途说明不完整；需说明现有好品集中后的补充用途、营销参谋大盘来源，以及候选不代表必须上架。`,
+    );
+  }
+}
+
 function validateCandidateRendering(text, evidence, errors) {
   const requiredFields = [
     ["theme_name", "对应精品店主题"],
@@ -270,25 +308,37 @@ function validateCandidateRendering(text, evidence, errors) {
     ["original_shop_name", "营销参谋原 Shop Name"],
     ["country", "国家"],
     ["gmv_range", "GMV 区间"],
+    ["average_price", "平均客单价"],
+    ["ads_cost_range", "广告消耗区间"],
     ["growth_range", "涨幅/增长区间"],
     ["filter_url", "筛选 URL"],
     ["captured_at", "采集时间"],
   ];
 
+  const sections = extractPlanSections(text);
+  const ranksWithCandidates = new Set();
   for (const [index, candidate] of evidence.candidates.entries()) {
+    const section = sections.get(candidate.theme_rank);
+    if (!section) {
+      errors.push(
+        `补品 ${candidate.product_id ?? index + 1} 没有放在方案 ${candidate.theme_rank} 的独立区块内。`,
+      );
+      continue;
+    }
+    ranksWithCandidates.add(candidate.theme_rank);
     for (const [field, label] of requiredFields) {
-      if (!reportContains(text, candidate[field])) {
+      if (!reportContains(section, candidate[field])) {
         errors.push(
-          `补品 ${candidate.product_id ?? index + 1} 的${label}未在报告中原样展示。`,
+          `补品 ${candidate.product_id ?? index + 1} 的${label}未在对应方案中原样展示。`,
         );
       }
     }
-    if (!reportContains(text, candidate.category?.l1)) {
+    if (!reportContains(section, candidate.category?.l1)) {
       errors.push(
         `补品 ${candidate.product_id ?? index + 1} 的一级类目未在报告中展示。`,
       );
     }
-    if (!reportContainsCategoryState(text, candidate.category)) {
+    if (!reportContainsCategoryState(section, candidate.category)) {
       errors.push(
         `补品 ${candidate.product_id ?? index + 1} 的二级类目或筛选状态未在报告中展示。`,
       );
@@ -296,18 +346,43 @@ function validateCandidateRendering(text, evidence, errors) {
     for (const [channel, range] of Object.entries(
       candidate.channel_ranges ?? {},
     )) {
-      if (!reportContains(text, range)) {
+      if (!reportContains(section, range)) {
         errors.push(
           `补品 ${candidate.product_id ?? index + 1} 的 ${channel} 渠道区间未在报告中展示。`,
         );
       }
     }
     const imageReference = candidate.image_url ?? candidate.screenshot_ref;
-    if (!reportContains(text, imageReference)) {
+    if (!reportContains(section, imageReference)) {
       errors.push(
         `补品 ${candidate.product_id ?? index + 1} 的图片或对应截图未嵌入报告。`,
       );
     }
+    if (typeof candidate.tr_estimate === "number") {
+      if (
+        !reportContainsLabeledPercentage(
+          section,
+          ["tr（估）", "tr(估)", "tr 估", "tr"],
+          candidate.tr_estimate,
+        )
+      ) {
+        errors.push(
+          `补品 ${candidate.product_id ?? index + 1} 的 TR（估）未在对应方案中按百分比展示，或与证据不一致。`,
+        );
+      }
+    } else if (
+      !/(?:tr（估）|tr\s*\(估\)|tr\s*估)[^。；;\n]{0,20}(?:不可计算|无法计算)/i.test(
+        normalizeText(section),
+      ) ||
+      !reportContains(section, candidate.tr_unavailable_reason)
+    ) {
+      errors.push(
+        `补品 ${candidate.product_id ?? index + 1} 的 TR（估）不可计算状态或原因未在对应方案展示。`,
+      );
+    }
+  }
+  for (const rank of ranksWithCandidates) {
+    validateSupplementPurpose(sections.get(rank), rank, errors);
   }
 }
 
@@ -398,6 +473,8 @@ function extractPlanSections(text) {
   const lines = readable.split(/\r?\n/);
   const headingPattern =
     /^\s*(?:#{1,6}\s*)?(?:\*\*)?(?:精品店|店铺方案|方案)\s*(10|[1-9]|一|二|三|四|五|六|七|八|九|十)\s*[｜|:：.、）)\-—]+/i;
+  const stopPattern =
+    /^\s*(?:#{1,6}\s*)?(?:\*\*)?ai\s*延伸建议(?:\s*[｜|·—-]\s*供客户评估)?/i;
   const sections = new Map();
   let activeRank = null;
   let buffer = [];
@@ -410,6 +487,12 @@ function extractPlanSections(text) {
     );
   };
   for (const line of lines) {
+    if (activeRank !== null && stopPattern.test(line)) {
+      flush();
+      activeRank = null;
+      buffer = [];
+      continue;
+    }
     const match = line.match(headingPattern);
     if (match) {
       flush();
@@ -478,13 +561,95 @@ function validatePlanRendering(text, planEvidence, errors) {
     ) {
       errors.push(`${label} 的精修型前置例外理由未在报告中展示。`);
     }
+    if (!/(?:现有好品|已有好品|客户好品|核心好品)/i.test(normalizeText(section))) {
+      errors.push(`${label} 缺少“现有好品组合”区域。`);
+    }
+    for (const [productIndex, product] of (
+      Array.isArray(plan.current_products) ? plan.current_products : []
+    ).entries()) {
+      for (const [field, description] of [
+        ["product_id", "Product ID"],
+        ["display_name", "显示名"],
+        ["source_shop_id", "来源 Shop ID"],
+        ["source_shop_name", "来源店铺名"],
+        ["gmv", "GMV"],
+        ["combination_note", "组合/重叠判断"],
+      ]) {
+        if (!reportContains(section, product[field])) {
+          errors.push(
+            `${label} 现有好品 ${product.product_id ?? productIndex + 1} 的${description}未在本方案中展示。`,
+          );
+        }
+      }
+      if (
+        typeof product.roas === "number" &&
+        !reportContains(section, product.roas)
+      ) {
+        errors.push(
+          `${label} 现有好品 ${product.product_id ?? productIndex + 1} 的 ROAS 未在本方案中展示。`,
+        );
+      }
+    }
+    validateSupplementPurpose(section, plan.rank, errors);
+  }
+}
+
+function validateReportStructure(text, expectedTop, errors) {
+  const normalized = normalizeText(text);
+  const conclusionIndex = normalized.search(/核心结论|统一结论|先把本报告建议的现有好品/);
+  const topIndex = normalized.search(new RegExp(`top\\s*${expectedTop}|精品店主题一览|精品店总表`, "i"));
+  if (conclusionIndex < 0) {
+    errors.push("缺少位于首屏的核心结论。");
+  } else if (topIndex < 0 || conclusionIndex > topIndex) {
+    errors.push("核心结论必须位于 Top 3 总表之前。");
+  }
+
+  const aiHeadingPattern = /(?:^|\n)\s*(?:#{1,2}\s*|<h[12][^>]*>)\s*ai\s*延伸建议(?:\s*[｜|·—-]\s*供客户评估)?/i;
+  const aiMatch = aiHeadingPattern.exec(String(text));
+  if (!aiMatch) {
+    errors.push("缺少末尾章节“AI 延伸建议｜供客户评估”。");
+    return;
+  }
+  const aiIndex = aiMatch.index;
+  const beforeAi = String(text).slice(0, aiIndex);
+  const aiSection = String(text).slice(aiIndex);
+  const planSections = extractPlanSections(text);
+  const lastPlanEndApprox = Math.max(
+    ...Array.from({ length: expectedTop }, (_, index) => {
+      const pattern = new RegExp(
+        `(?:精品店|店铺方案|方案)\\s*${index + 1}\\s*[｜|:：.、）)\\-—]+`,
+        "i",
+      );
+      return String(text).search(pattern);
+    }),
+  );
+  if (lastPlanEndApprox >= aiIndex || planSections.size < expectedTop) {
+    errors.push("AI 延伸建议必须位于全部精品店方案之后。" );
+  }
+  for (let rank = 1; rank <= expectedTop; rank += 1) {
+    const pattern = new RegExp(`方案\\s*${rank}(?!\\d)|精品店\\s*${rank}(?!\\d)`, "i");
+    if (!pattern.test(aiSection)) {
+      errors.push(`AI 延伸建议缺少独立的方案 ${rank} 小节。`);
+    }
+  }
+  if (
+    /(?:^|\n)\s*(?:#{1,4}\s*|<h[1-4][^>]*>)\s*(?:内容打法|直播打法|达人打法|建议落地顺序)/i.test(
+      beforeAi,
+    )
+  ) {
+    errors.push("达人、直播或内容等自由发挥只能放在末尾 AI 延伸建议章节。" );
+  }
+  const afterAiTopLevel = aiSection
+    .slice(aiMatch[0].length)
+    .match(/(?:^|\n)\s*(?:#{1,2}\s+|<h[12][^>]*>)(?!\s*(?:方案\s*\d|精品店\s*\d|客户整体货盘评估))/i);
+  if (afterAiTopLevel) {
+    errors.push("AI 延伸建议必须是报告最后一个一级/二级章节。" );
   }
 }
 
 function validateReport(
   text,
-  merchantWindow,
-  gcrmWindow,
+  reportWindow,
   generatedDate,
   expectedTop,
   planEvidence,
@@ -497,13 +662,13 @@ function validateReport(
   const warnings = [...planResult.warnings, ...evidenceResult.warnings];
   const normalized = canonicalizeDates(text);
 
-  for (const [label, window] of [
-    ["客户货盘周期", merchantWindow],
-    ["营销参谋周期", gcrmWindow],
-  ]) {
-    if (!normalized.includes(window.start) || !normalized.includes(window.end)) {
-      errors.push(`${label}未完整展示 ${window.start} 至 ${window.end}。`);
-    }
+  if (
+    !normalized.includes(reportWindow.start) ||
+    !normalized.includes(reportWindow.end)
+  ) {
+    errors.push(
+      `报告周期未完整展示 ${reportWindow.start} 至 ${reportWindow.end}。`,
+    );
   }
   if (!normalized.includes(generatedDate)) {
     errors.push(`生成日未展示 ${generatedDate}。`);
@@ -530,6 +695,7 @@ function validateReport(
     expectedTop,
     errors,
   );
+  validateReportStructure(text, expectedTop, errors);
   validatePlanRendering(text, planEvidence, errors);
   const plansByRank = new Map(
     (Array.isArray(planEvidence?.plans) ? planEvidence.plans : []).map(
@@ -608,7 +774,7 @@ function validateReport(
     errors: [...new Set(errors)],
     warnings: [...new Set(warnings)],
     messages: [
-      `周期：客户货盘 ${merchantWindow.display}；营销参谋 ${gcrmWindow.display}；生成日 ${generatedDate}`,
+      `报告周期：${reportWindow.display}；生成日 ${generatedDate}`,
       `Top ${expectedTop} 结构：${enoughRanks || (topPhrase && shopIds >= expectedTop) ? "已识别" : "未识别"}`,
       `方案证据：重组型 ${planResult.checks.reorganization_count ?? 0}；精修型 ${planResult.checks.refinement_count ?? 0}`,
       `营销参谋证据推导：${evidenceResult.status}；真实查询 ${evidenceResult.checks.query_count ?? 0}；候选 ${evidenceResult.checks.candidate_count ?? 0}`,
@@ -636,6 +802,7 @@ function validateReport(
         ]),
       ),
       generated_date: generatedDate,
+      report_window: reportWindow,
       hard_count_directives: hardDirectives,
     },
   };
@@ -648,14 +815,7 @@ if (args.help || args.h) {
 }
 
 try {
-  requireOptions(args, [
-    "report",
-    "merchant-window",
-    "gcrm-window",
-    "generated-date",
-    "plan-evidence",
-    "gcrm-evidence",
-  ]);
+  requireOptions(args, ["report", "generated-date", "plan-evidence", "gcrm-evidence"]);
   const expectedTop = Number(args["expected-top"] ?? 3);
   if (!Number.isInteger(expectedTop) || expectedTop < 1 || expectedTop > 10) {
     throw new Error("--expected-top 必须是 1–10 的整数。");
@@ -672,25 +832,26 @@ try {
     }
   }
 
-  const merchantWindow = parseWindow(args["merchant-window"], "客户货盘周期");
-  const gcrmWindow = parseWindow(args["gcrm-window"], "营销参谋周期");
+  const reportWindow = parseWindow(
+    resolveReportWindowArgs(args),
+    "报告周期",
+  );
   const generatedDate = parseWindow(
     `${args["generated-date"]}..${args["generated-date"]}`,
     "生成日",
   ).start;
   const text = readText(args.report, "报告");
   const planEvidence = readJson(args["plan-evidence"], "方案证据文件");
-  const planResult = validatePlanEvidence(planEvidence, merchantWindow, {
+  const planResult = validatePlanEvidence(planEvidence, reportWindow, {
     expectedPlans: expectedTop,
   });
   const evidence = readJson(args["gcrm-evidence"], "GCRM 证据文件");
-  const evidenceResult = validateGcrmEvidence(evidence, gcrmWindow, {
+  const evidenceResult = validateGcrmEvidence(evidence, reportWindow, {
     expectedThemeCount: expectedTop,
   });
   const result = validateReport(
     text,
-    merchantWindow,
-    gcrmWindow,
+    reportWindow,
     generatedDate,
     expectedTop,
     planEvidence,

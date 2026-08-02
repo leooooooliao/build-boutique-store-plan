@@ -1,34 +1,75 @@
 # 精品大店建议
 
-全文数据窗口｜客户货盘：2026-07-01 至 2026-07-26；营销参谋：2026-06-29 至 2026-07-28；生成日：2026-07-29。
+全文报告周期：2026-07-01 至 2026-07-26｜生成日：2026-07-29｜识别国家：MY。
 
-## Top 3
+## 核心结论
 
-### 精品店 1｜厨房
-承接店：Kitchen Hub；Shop ID：7490000000000000001
+先把本报告建议的现有好品集中到对应承接店，再围绕店铺主题定向寻找达人，并按后文补品建议逐步补入同主题商品，持续去杂，把杂货型店铺收敛为相对垂直的精品店。
+
+## Top 3 精品店总表
+
+1. 厨房｜Kitchen Hub（7490000000000000001）｜重组型
+2. 车品｜Auto Ready（7490000000000000002）｜重组型
+3. 按摩｜Recovery Home（7490000000000000003）｜精修型
+
+### 方案 1｜厨房
+
+承接店：Kitchen Hub；Shop ID：7490000000000000001。
 
 方案证据：重组型；候选核心 GMV：1000；承接店内已有 GMV 占比：20%；店外候选 GMV 占比：80%；来源店铺数：3。排序理由：店外 GMV 占比高且来源分散，具备真实跨店集中价值。
 
-### 精品店 2｜车品
-承接店：Auto Ready；Shop ID：7490000000000000002
+#### 现有好品组合
+
+1731000000000000001｜厨房好品｜Kitchen Source｜7490000000000000011｜GMV 320｜ROAS 4.8｜补齐高效烹饪场景。
+
+#### 营销参谋补品
+
+该店完成现有好品集中后，还可以补充同主题商品。以下查询来自营销参谋对应国家、类目和报告周期内的大盘表现，作为后续开品方向，不代表必须上架。本主题暂无合格补品候选。
+
+my-kitchen-none-202607｜厨房｜MY｜厨房用品｜二级类目不可用｜读取行数 50 行｜2026-07-29T16:00:00+08:00｜读取到的商品均与客户现有货盘功能重复｜gcrm-my-kitchen-none-202607.png｜https://mmm.tiktok-row.net/gcrm_overseas/phoenix/marketing-advisor/product-insights/top-product?country=MY&category=kitchen
+
+### 方案 2｜车品
+
+承接店：Auto Ready；Shop ID：7490000000000000002。
 
 方案证据：重组型；候选核心 GMV：800；承接店内已有 GMV 占比：40%；店外候选 GMV 占比：60%；来源店铺数：2。排序理由：多数候选 GMV 位于承接店外，可形成第二个清晰重组主题。
 
-### 精品店 3｜按摩
-承接店：Recovery Home；Shop ID：7490000000000000003
+#### 现有好品组合
+
+1731000000000000002｜车品好品｜Auto Source｜7490000000000000012｜GMV 260｜ROAS 5.2｜补齐车内清洁场景。
+
+#### 营销参谋补品
+
+该店完成现有好品集中后，还可以补充同主题商品。以下查询来自营销参谋对应国家、类目和报告周期内的大盘表现，作为后续开品方向，不代表必须上架。本主题暂无合格补品候选。
+
+my-auto-none-202607｜车品｜MY｜汽车与摩托车｜二级类目不支持｜读取行数 50 行｜2026-07-29T16:06:00+08:00｜读取到的商品均缺少与现有主题互补的场景｜gcrm-my-auto-none-202607.png｜https://mmm.tiktok-row.net/gcrm_overseas/phoenix/marketing-advisor/product-insights/top-product?country=MY&category=auto
+
+### 方案 3｜按摩
+
+承接店：Recovery Home；Shop ID：7490000000000000003。
 
 方案证据：精修型；候选核心 GMV：700；承接店内已有 GMV 占比：70%；店外候选 GMV 占比：30%；来源店铺数：2。排序理由：核心货盘多数已在承接店，价值主要来自聚焦去杂和统一内容。
 
-## 营销参谋
+#### 现有好品组合
 
-本轮已按确认周期完成真实筛选，但没有合格补品候选，因此不强行补品。
+1731000000000000003｜按摩好品｜Recovery Home｜7490000000000000003｜GMV 300｜ROAS 不可计算｜承接店内现有核心恢复品。
 
-| 查询 | 国家与类目 | 实际读取行数 | 采集时间 | 未入选原因 | 查询证据 |
-|---|---|---:|---|---|---|
-| my-kitchen-none-202607 | MY｜厨房用品｜二级类目不可用 | 读取行数 50 行 | 2026-07-29T16:00:00+08:00 | 读取到的商品均与客户现有货盘功能重复 | gcrm-my-kitchen-none-202607.png |
-| my-auto-none-202607 | MY｜汽车与摩托车｜二级类目不支持 | 读取行数 50 行 | 2026-07-29T16:06:00+08:00 | 读取到的商品均缺少与现有主题互补的场景 | gcrm-my-auto-none-202607.png |
-| my-care-none-202607 | MY｜保健｜二级类目不可用 | 读取行数 50 行 | 2026-07-29T16:12:00+08:00 | 读取到的商品均与现有按摩类商品原型重复 | gcrm-my-care-none-202607.png |
+#### 营销参谋补品
 
-- 厨房用品筛选 URL：https://mmm.tiktok-row.net/gcrm_overseas/phoenix/marketing-advisor/product-insights/top-product?country=MY&category=kitchen
-- 汽车与摩托车筛选 URL：https://mmm.tiktok-row.net/gcrm_overseas/phoenix/marketing-advisor/product-insights/top-product?country=MY&category=auto
-- 保健筛选 URL：https://mmm.tiktok-row.net/gcrm_overseas/phoenix/marketing-advisor/product-insights/top-product?country=MY&category=care
+该店完成现有好品集中后，还可以补充同主题商品。以下查询来自营销参谋对应国家、类目和报告周期内的大盘表现，作为后续开品方向，不代表必须上架。本主题暂无合格补品候选。
+
+my-care-none-202607｜按摩｜MY｜保健｜二级类目不可用｜读取行数 50 行｜2026-07-29T16:12:00+08:00｜读取到的商品均与现有按摩类商品原型重复｜gcrm-my-care-none-202607.png｜https://mmm.tiktok-row.net/gcrm_overseas/phoenix/marketing-advisor/product-insights/top-product?country=MY&category=care
+
+## AI 延伸建议｜供客户评估
+
+### 方案 1
+
+- 当前营销参谋未发现结构性新增候选，可先评估现有好品集中后的主题表现。
+
+### 方案 2
+
+- 当前不强行扩品，优先验证车品组合是否形成清晰店铺认知。
+
+### 方案 3
+
+- 精修型方案先做去杂；证据不足时不额外扩充商品范围。

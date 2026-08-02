@@ -6,6 +6,7 @@ import {
   parseArgs,
   parseNumber,
   requireOptions,
+  resolveReportWindowArgs,
   round,
   safeRatio,
   validateInputs,
@@ -17,8 +18,7 @@ const HELP = `
 用法：
   node scripts/prepare_portfolio.mjs \\
     --workbook <一个含两张表的客户数据.xlsx> \\
-    --merchant-window 2026-07-01..2026-07-26 \\
-    --gcrm-window 2026-06-29..2026-07-28 \\
+    --report-window 2026-07-01..2026-07-26 \\
     [--output portfolio-audit.json] \\
     [--analysis-output analysis-pool.json]
 
@@ -26,8 +26,7 @@ const HELP = `
   node scripts/prepare_portfolio.mjs \\
     --id-data <ID数据.csv|tsv> \\
     --name-data <名字对照.csv|tsv> \\
-    --merchant-window 2026-07-01..2026-07-26 \\
-    --gcrm-window 2026-06-29..2026-07-28 \\
+    --report-window 2026-07-01..2026-07-26 \\
     [--output portfolio-audit.json] \\
     [--analysis-output analysis-pool.json]
 
@@ -635,10 +634,7 @@ function buildOutput(validation, idDataPath, nameDataPath, metadata) {
   return {
     schema_version: "1.2",
     generated_at: new Date().toISOString(),
-    periods: {
-      merchant_portfolio: validation.merchantWindow,
-      gcrm_marketing_advisor: validation.gcrmWindow,
-    },
+    periods: { report: validation.reportWindow },
     policy: {
       metric_source: "ID 数据",
       name_source: "名字对照数据，仅作别名和商品语义理解",
@@ -744,12 +740,11 @@ if (args.help || args.h) {
 }
 
 try {
-  requireOptions(args, ["merchant-window", "gcrm-window"]);
+  const reportWindowRaw = resolveReportWindowArgs(args);
   const dataPaths = resolveDataPaths(args);
   const validation = validateInputs({
     ...dataPaths,
-    merchantWindowRaw: args["merchant-window"],
-    gcrmWindowRaw: args["gcrm-window"],
+    reportWindowRaw,
   });
   if (!validation.analysis_ready) {
     for (const error of validation.hard_blockers) {

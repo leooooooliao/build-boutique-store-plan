@@ -123,7 +123,7 @@ try {
   assert.equal(parsePublishedDigest("<p>no release digest</p>"), null);
 
   const sameRelease = path.join(temporaryRoot, "same.json");
-  writeJson(sameRelease, releaseFixture("v1.3.1"));
+  writeJson(sameRelease, releaseFixture("v1.4.0"));
   const same = runUpdater(["--release-json", sameRelease]);
   assert.equal(same.status, "up_to_date");
   assert.equal(same.comparison, "same");
@@ -173,7 +173,7 @@ try {
   );
 
   assert.equal(
-    runUpdater(["--assert-tag", "v1.3.1"]).status,
+    runUpdater(["--assert-tag", "v1.4.0"]).status,
     "up_to_date",
   );
   runUpdater(["--assert-tag", "v9.9.9"], 1);
@@ -190,10 +190,10 @@ try {
   const applyRelease = path.join(temporaryRoot, "apply.json");
   writeJson(
     applyRelease,
-    releaseFixture("v1.3.1", {
+    releaseFixture("v1.4.0", {
       assets: [
         {
-          name: "build-boutique-store-plan-v1.3.1.zip",
+          name: "build-boutique-store-plan-v1.4.0.zip",
           browser_download_url: "https://example.invalid/release.zip",
           digest: `sha256:${digest}`,
         },
@@ -218,7 +218,7 @@ try {
     { BOUTIQUE_SKILL_UPDATE_TEST_MODE: "1" },
   );
   assert.equal(applied.status, "updated");
-  assert.equal(fs.readFileSync(path.join(installRoot, "VERSION"), "utf8").trim(), "v1.3.1");
+  assert.equal(fs.readFileSync(path.join(installRoot, "VERSION"), "utf8").trim(), "v1.4.0");
   assert.equal(fs.existsSync(path.join(installRoot, "old-marker.txt")), false);
   assert.equal(
     fs.readFileSync(path.join(applied.backup_path, "old-marker.txt"), "utf8").trim(),
@@ -230,10 +230,10 @@ try {
   const badDigestRelease = path.join(temporaryRoot, "bad-digest.json");
   writeJson(
     badDigestRelease,
-    releaseFixture("v1.3.1", {
+    releaseFixture("v1.4.0", {
       assets: [
         {
-          name: "build-boutique-store-plan-v1.3.1.zip",
+          name: "build-boutique-store-plan-v1.4.0.zip",
           browser_download_url: "https://example.invalid/release.zip",
           digest: `sha256:${"0".repeat(64)}`,
         },
