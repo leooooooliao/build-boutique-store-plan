@@ -451,6 +451,18 @@ runReportMutation(
 );
 
 runReportMutation(
+  "report-unstructured-supplement.md",
+  (source) =>
+    source
+      .replaceAll("商品定位", "")
+      .replaceAll("大盘表现", "")
+      .replaceAll("投入与渠道", "")
+      .replaceAll("补品判断", "")
+      .replaceAll("数据来源", ""),
+  /补品证据未按可扫描结构呈现/,
+);
+
+runReportMutation(
   "report-missing-tr.md",
   (source) => source.replace("｜TR（估）：10.0%", ""),
   /TR（估）未在对应方案中按百分比展示/,

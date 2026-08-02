@@ -18,6 +18,9 @@ const repositoryRoot = path.resolve(
   "..",
 );
 const updater = path.join(repositoryRoot, "scripts", "sync_skill_release.mjs");
+const currentVersion = fs
+  .readFileSync(path.join(repositoryRoot, "VERSION"), "utf8")
+  .trim();
 const temporaryRoot = fs.mkdtempSync(
   path.join(os.tmpdir(), "boutique-self-update-test-"),
 );
@@ -123,7 +126,7 @@ try {
   assert.equal(parsePublishedDigest("<p>no release digest</p>"), null);
 
   const sameRelease = path.join(temporaryRoot, "same.json");
-  writeJson(sameRelease, releaseFixture("v1.4.0"));
+  writeJson(sameRelease, releaseFixture(currentVersion));
   const same = runUpdater(["--release-json", sameRelease]);
   assert.equal(same.status, "up_to_date");
   assert.equal(same.comparison, "same");
@@ -158,7 +161,7 @@ try {
   const prerelease = path.join(temporaryRoot, "prerelease.json");
   writeJson(
     prerelease,
-    releaseFixture("v1.4.0", { prerelease: true }),
+    releaseFixture(currentVersion, { prerelease: true }),
   );
   assert.equal(
     runUpdater(["--release-json", prerelease]).status,
@@ -173,7 +176,7 @@ try {
   );
 
   assert.equal(
-    runUpdater(["--assert-tag", "v1.4.0"]).status,
+    runUpdater(["--assert-tag", currentVersion]).status,
     "up_to_date",
   );
   runUpdater(["--assert-tag", "v9.9.9"], 1);
@@ -190,10 +193,10 @@ try {
   const applyRelease = path.join(temporaryRoot, "apply.json");
   writeJson(
     applyRelease,
-    releaseFixture("v1.4.0", {
+    releaseFixture(currentVersion, {
       assets: [
         {
-          name: "build-boutique-store-plan-v1.4.0.zip",
+          name: `build-boutique-store-plan-${currentVersion}.zip`,
           browser_download_url: "https://example.invalid/release.zip",
           digest: `sha256:${digest}`,
         },
@@ -218,7 +221,10 @@ try {
     { BOUTIQUE_SKILL_UPDATE_TEST_MODE: "1" },
   );
   assert.equal(applied.status, "updated");
-  assert.equal(fs.readFileSync(path.join(installRoot, "VERSION"), "utf8").trim(), "v1.4.0");
+  assert.equal(
+    fs.readFileSync(path.join(installRoot, "VERSION"), "utf8").trim(),
+    currentVersion,
+  );
   assert.equal(fs.existsSync(path.join(installRoot, "old-marker.txt")), false);
   assert.equal(
     fs.readFileSync(path.join(applied.backup_path, "old-marker.txt"), "utf8").trim(),
@@ -230,10 +236,10 @@ try {
   const badDigestRelease = path.join(temporaryRoot, "bad-digest.json");
   writeJson(
     badDigestRelease,
-    releaseFixture("v1.4.0", {
+    releaseFixture(currentVersion, {
       assets: [
         {
-          name: "build-boutique-store-plan-v1.4.0.zip",
+          name: `build-boutique-store-plan-${currentVersion}.zip`,
           browser_download_url: "https://example.invalid/release.zip",
           digest: `sha256:${"0".repeat(64)}`,
         },
